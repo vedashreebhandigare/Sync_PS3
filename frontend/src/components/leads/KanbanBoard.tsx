@@ -35,13 +35,13 @@ export default function KanbanBoard({
   return (
     <>
       {/* Board */}
-      <div style={{ flex: 1, overflowX: "auto", overflowY: "hidden", padding: 14 }}>
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: 14 }}>
         <div
           style={{
             display: "flex",
-            gap: 10,
-            height: "100%",
-            minWidth: "fit-content",
+            flexWrap: "wrap",
+            gap: 14,
+            alignContent: "flex-start",
           }}
         >
           {STAGES.map((stage) => (

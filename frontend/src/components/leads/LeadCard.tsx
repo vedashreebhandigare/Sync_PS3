@@ -25,14 +25,13 @@ export default function LeadCard({
     <div
       onClick={() => onClick(lead)}
       style={{
-        background: "#fff",
+        background: "#34294eff",
         borderRadius: "var(--radius-lg)",
-        padding: "12px 14px",
+        padding: "16px 18px",
         cursor: "pointer",
         border: "1.5px solid var(--border-light)",
         transition: "all var(--transition-normal)",
         boxShadow: "var(--shadow-sm)",
-        borderLeft: `3.5px solid ${stageColor}`,
       }}
       onMouseEnter={(e) => {
         const el = e.currentTarget;

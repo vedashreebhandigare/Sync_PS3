@@ -79,14 +79,16 @@ export default function KanbanColumn({
   return (
     <div
       style={{
-        width: 248,
-        minWidth: 248,
+        width: 280,
+        minWidth: 280,
         display: "flex",
         flexDirection: "column",
         background: "var(--bg-section)",
         borderRadius: "var(--radius-lg)",
         border: "1px solid var(--border-default)",
         maxHeight: "calc(100vh - 170px)",
+        marginRight: 6,
+        marginBottom: 6,
       }}
     >
       {/* Column header */}
@@ -133,15 +135,14 @@ export default function KanbanColumn({
         </span>
       </div>
 
-      {/* Cards */}
       <div
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: 6,
+          padding: 10,
           display: "flex",
           flexDirection: "column",
-          gap: 6,
+          gap: 12,
         }}
       >
         {leads.length === 0 ? (
