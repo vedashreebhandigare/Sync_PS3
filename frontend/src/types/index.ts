@@ -1,4 +1,25 @@
 // ============================================
+// AUTH TYPES
+// ============================================
+
+export type UserRole = "owner" | "branch_manager";
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  name: string;
+  role: UserRole;
+  branch_id: string | null;
+  branch_name: string | null;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user: AuthUser;
+}
+
+// ============================================
 // CORE DOMAIN TYPES
 // ============================================
 
@@ -57,24 +78,21 @@ export type MenuCategory =
 // API RESPONSE TYPES (snake_case from backend)
 // ============================================
 
-/** Returned by GET /api/branches */
 export interface Branch {
   id: string;
   name: string;
 }
 
-/** Returned by GET /api/branches/{id}/halls */
 export interface Hall {
   id: string;
   branch_id: string;
   name: string;
   location: string;
   capacity: number;
-  event_types: string;       // comma-separated, e.g. "Wedding,Reception"
+  event_types: string;
   cost_per_plate: number;
 }
 
-/** Returned inside LeadFull.menu_items */
 export interface MenuItem {
   id: string;
   name: string;
@@ -82,14 +100,12 @@ export interface MenuItem {
   cost_per_plate: number;
 }
 
-/** Sent to PUT /api/leads/{id}/menu (no id — backend generates) */
 export interface MenuItemInput {
   name: string;
   category: MenuCategory;
   cost_per_plate: number;
 }
 
-/** Returned by GET /api/menu-catalog */
 export interface CatalogItem {
   id: string;
   name: string;
@@ -97,7 +113,6 @@ export interface CatalogItem {
   cost_per_plate: number;
 }
 
-/** Returned by GET /api/contractors */
 export interface Contractor {
   id: string;
   name: string;
@@ -105,20 +120,17 @@ export interface Contractor {
   phone: string;
 }
 
-/** Returned inside LeadFull.add_ons */
 export interface AddOn {
   id: string;
   desc: string;
   cost: number;
 }
 
-/** Sent to PUT /api/leads/{id}/addons */
 export interface AddOnInput {
   desc: string;
   cost: number;
 }
 
-/** Returned inside LeadFull.remarks */
 export interface Remark {
   id: number;
   text: string;
@@ -128,10 +140,9 @@ export interface Remark {
 }
 
 // ============================================
-// PARTNER TYPES (Lead Generation)
+// PARTNER TYPES
 // ============================================
 
-/** Returned by GET /api/partners (with computed stats) */
 export interface Partner {
   id: string;
   name: string;
@@ -148,7 +159,6 @@ export interface Partner {
   conversion_rate: number;
 }
 
-/** Sent to POST /api/partners */
 export interface PartnerCreateInput {
   name: string;
   type: string;
@@ -160,7 +170,6 @@ export interface PartnerCreateInput {
   notes?: string;
 }
 
-/** Sent to PUT /api/partners/:id */
 export interface PartnerUpdateInput {
   name?: string;
   type?: string;
@@ -172,7 +181,6 @@ export interface PartnerUpdateInput {
   notes?: string;
 }
 
-/** Returned by GET /api/partners/summary */
 export interface PartnerSummary {
   active_partners: number;
   total_referred: number;
@@ -184,7 +192,6 @@ export interface PartnerSummary {
 // LEAD TYPES
 // ============================================
 
-/** Returned by GET /api/leads (list — no nested sub-resources) */
 export interface LeadBrief {
   id: string;
   name: string;
@@ -194,7 +201,7 @@ export interface LeadBrief {
   event_date: string;
   guest_count: number;
   budget: string;
-  branch: string;            // branch ID e.g. "branch-andheri"
+  branch: string;
   source: LeadSource;
   stage: StageId;
   assigned_to: string;
@@ -205,7 +212,6 @@ export interface LeadBrief {
   referred_by_partner_id: string | null;
 }
 
-/** Returned by GET /api/leads/{id} (full detail with nested data) */
 export interface LeadFull extends LeadBrief {
   selected_hall_id: string | null;
   menu_total: number;
@@ -213,7 +219,7 @@ export interface LeadFull extends LeadBrief {
   allergies: string;
   advance_percent: number;
   decor_type: DecorType;
-  decor_contractors: string;   // comma-separated contractor IDs
+  decor_contractors: string;
   feedback_positives: string;
   feedback_negatives: string;
   menu_items: MenuItem[];
@@ -221,7 +227,6 @@ export interface LeadFull extends LeadBrief {
   remarks: Remark[];
 }
 
-/** Sent to POST /api/leads */
 export interface LeadCreateInput {
   name: string;
   phone?: string;
@@ -240,7 +245,6 @@ export interface LeadCreateInput {
   referred_by_partner_id?: string | null;
 }
 
-/** Sent to PUT /api/leads/{id} (partial update) */
 export interface LeadUpdateInput {
   name?: string;
   phone?: string;
@@ -293,7 +297,7 @@ export interface LeadFilters {
 }
 
 // ============================================
-// UI TYPES (unchanged)
+// UI TYPES
 // ============================================
 
 export type ButtonVariant =

@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from auth import hash_password
 from database import SessionLocal, init_db
 from models import (
     Branch,
@@ -13,6 +14,7 @@ from models import (
     MenuItem,
     Partner,
     Remark,
+    User,
 )
 
 
@@ -40,6 +42,59 @@ def seed():
         Branch(id="branch-panvel", name="Panvel Branch"),
     ]
     db.add_all(branches)
+    db.flush()
+
+    # ------------------------------------------------------------------
+    # Users (Owner + Branch Managers)
+    # ------------------------------------------------------------------
+    users = [
+        User(
+            id="user-owner",
+            username="owner",
+            password_hash=hash_password("owner123"),
+            name="Rajiv Mehta",
+            role="owner",
+            branch_id=None,  # owner sees all
+            is_active=True,
+        ),
+        User(
+            id="user-mgr-andheri",
+            username="andheri.mgr",
+            password_hash=hash_password("andheri123"),
+            name="Priya Sharma",
+            role="branch_manager",
+            branch_id="branch-andheri",
+            is_active=True,
+        ),
+        User(
+            id="user-mgr-thane",
+            username="thane.mgr",
+            password_hash=hash_password("thane123"),
+            name="Amit Desai",
+            role="branch_manager",
+            branch_id="branch-thane",
+            is_active=True,
+        ),
+        User(
+            id="user-mgr-powai",
+            username="powai.mgr",
+            password_hash=hash_password("powai123"),
+            name="Sneha Nair",
+            role="branch_manager",
+            branch_id="branch-powai",
+            is_active=True,
+        ),
+        User(
+            id="user-mgr-panvel",
+            username="panvel.mgr",
+            password_hash=hash_password("panvel123"),
+            name="Vikram Joshi",
+            role="branch_manager",
+            branch_id="branch-panvel",
+            is_active=True,
+        ),
+    ]
+    db.add_all(users)
     db.flush()
 
     # ------------------------------------------------------------------
@@ -96,7 +151,7 @@ def seed():
             contact_person="Priya Sharma",
             phone="+91 87654 32109",
             email="priya@sharmaweddings.com",
-            branch_id=None,  # works across all branches
+            branch_id=None,
             status="active",
             notes="Premium wedding planner. High conversion rate.",
             created_at=datetime.utcnow() - timedelta(days=120),
@@ -213,7 +268,6 @@ def seed():
     ]
 
     leads = [
-        # ── Potential leads (from partners) ──
         _lead("Sanjay Kapoor", "9876543230", "sanjay@example.com", "Wedding",
               today + timedelta(days=70), 350, "₹9,00,000", "branch-andheri",
               "Partner Referral", "potential", "",
@@ -224,8 +278,6 @@ def seed():
               "Partner Referral", "potential", "",
               remarks_text="Referred by partner: Mehta Saree House (Clothing Store)",
               referred_by_partner_id="partner-3"),
-
-        # ── Regular pipeline leads ──
         _lead("Aarav Sharma", "9876543210", "aarav@example.com", "Wedding",
               today + timedelta(days=45), 300, "₹5,00,000", "branch-andheri",
               "Referral", "new", "Priya"),
@@ -261,8 +313,6 @@ def seed():
               today + timedelta(days=3), 350, "₹7,00,000", "branch-andheri",
               "Walk-in", "feedback", "Amit", hall_id="hall-3", menu_items=sample_menu,
               advance_paid=80500.0, feedback_pos="Great food", feedback_neg="Parking was tight"),
-
-        # ── These partner-referred leads already progressed (for stats) ──
         _lead("Ritu Bhatia", "9876543232", "ritu@example.com", "Wedding",
               today - timedelta(days=5), 280, "₹6,50,000", "branch-andheri",
               "Partner Referral", "converted", "Priya", hall_id="hall-1", menu_items=sample_menu,
@@ -273,8 +323,6 @@ def seed():
               "Partner Referral", "call", "Amit",
               remarks_text="Referred by Kapoor Photography Studio.",
               referred_by_partner_id="partner-5"),
-
-        # ── Original terminal leads ──
         _lead("Manish Gupta", "9876543220", "manish@example.com", "Reception",
               today - timedelta(days=10), 200, "₹4,50,000", "branch-thane",
               "Social Media", "converted", "Sneha", hall_id="hall-5", menu_items=sample_menu,
@@ -287,7 +335,7 @@ def seed():
     db.add_all(leads)
     db.commit()
     db.close()
-    print(f"Seeded: 4 branches, 10 halls, 5 contractors, 5 partners, {len(catalog)} menu items, {len(leads)} leads.")
+    print(f"Seeded: 4 branches, {len(users)} users, 10 halls, 5 contractors, 5 partners, {len(catalog)} menu items, {len(leads)} leads.")
 
 
 if __name__ == "__main__":

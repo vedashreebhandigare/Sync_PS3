@@ -2,6 +2,7 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
+    Boolean,
     Column,
     Date,
     DateTime,
@@ -85,6 +86,11 @@ class PartnerStatusEnum(str, enum.Enum):
     INACTIVE = "inactive"
 
 
+class UserRoleEnum(str, enum.Enum):
+    OWNER = "owner"
+    BRANCH_MANAGER = "branch_manager"
+
+
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
@@ -95,6 +101,23 @@ def gen_uuid() -> str:
 # ---------------------------------------------------------------------------
 # Models
 # ---------------------------------------------------------------------------
+
+class User(Base):
+    """Application user — either an owner or a branch manager."""
+    __tablename__ = "users"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    username = Column(String, unique=True, nullable=False, index=True)
+    password_hash = Column(String, nullable=False)
+    name = Column(String, nullable=False)
+    role = Column(String, nullable=False, default="branch_manager")  # "owner" | "branch_manager"
+    branch_id = Column(String, ForeignKey("branches.id"), nullable=True)  # NULL for owner
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    branch = relationship("Branch", foreign_keys=[branch_id])
+
+
 class Branch(Base):
     __tablename__ = "branches"
 
