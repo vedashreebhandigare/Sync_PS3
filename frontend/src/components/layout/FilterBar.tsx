@@ -14,7 +14,7 @@ export default function FilterBar({
   onChange,
   branches,
   hasActiveFilters,
-}: FilterBarProps): JSX.Element {
+}: FilterBarProps) {
   const set = (key: keyof LeadFilters, value: string): void => {
     onChange({ ...filters, [key]: value });
   };

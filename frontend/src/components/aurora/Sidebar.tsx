@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { FoodIcon } from "../ui";
 
 /* ─── Menu Data ─── */
 
 interface MenuItem {
   id: string;
   label: string;
-  icon: JSX.Element;
+  icon: any;
   hasChevron?: boolean;
   badge?: string;
   subItems?: { id: string; label: string }[];
@@ -34,6 +35,12 @@ const MENU: MenuItem[] = [
     ],
   },
   { id: "events", label: "Events", icon: <StarIcon /> },
+  {
+    id: "menu",
+    label: "Menu",
+    icon: <FoodIcon />,
+  },
+  { id: "logistics", label: "Logistics", icon: <PackageIcon /> },
   { id: "reports", label: "Reports", icon: <BarChartIcon /> },
   { id: "users", label: "Users", icon: <UserIcon /> },
   { id: "settings", label: "Settings", icon: <SettingsIcon /> },
@@ -43,9 +50,10 @@ const MENU: MenuItem[] = [
 
 interface SidebarProps {
   activeItemId?: string;
+  onItemClick?: (id: string) => void;
 }
 
-export default function Sidebar({ activeItemId = "dashboard" }: SidebarProps): JSX.Element {
+export default function Sidebar({ activeItemId = "dashboard", onItemClick }: SidebarProps) {
   const [activeId, setActiveId] = useState(activeItemId);
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({
     leads: true,
@@ -84,6 +92,7 @@ export default function Sidebar({ activeItemId = "dashboard" }: SidebarProps): J
                   toggleExpand(item.id, e);
                 } else {
                   setActiveId(item.id);
+                  if (onItemClick) onItemClick(item.id);
                 }
               }}
             >
@@ -112,7 +121,10 @@ export default function Sidebar({ activeItemId = "dashboard" }: SidebarProps): J
                   <div
                     key={sub.id}
                     className={`aurora-sidebar-subitem${activeId === sub.id ? " active" : ""}`}
-                    onClick={() => setActiveId(sub.id)}
+                    onClick={() => {
+                      setActiveId(sub.id);
+                      if (onItemClick) onItemClick(sub.id);
+                    }}
                     style={{
                       padding: "6px 12px",
                       fontSize: "12.5px",
@@ -205,6 +217,17 @@ function SettingsIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
       <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
       <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function PackageIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
+      <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+      <line x1="12" y1="22.08" x2="12" y2="12" />
     </svg>
   );
 }

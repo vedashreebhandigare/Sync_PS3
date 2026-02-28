@@ -1,7 +1,7 @@
 import type { LeadBrief } from "../../types";
 import { Badge } from "../ui";
 import { formatDate, daysUntil, isUrgent } from "../../utils";
-import { EVENT_TYPE_COLORS } from "../../constants";
+
 
 /* ─── Dark-mode event type badge colors ─── */
 const DARK_EVENT_COLORS: Record<string, { bg: string; color: string }> = {
@@ -17,15 +17,14 @@ const DARK_EVENT_COLORS: Record<string, { bg: string; color: string }> = {
 
 interface LeadCardProps {
   lead: LeadBrief;
-  stageColor: string;
+  stageColor?: string;
   onClick: (id: string) => void;
 }
 
 export default function LeadCard({
   lead,
-  stageColor,
   onClick,
-}: LeadCardProps): JSX.Element {
+}: LeadCardProps) {
   const days = daysUntil(lead.event_date);
   const urgent = isUrgent(lead.event_date);
   const typeStyle = DARK_EVENT_COLORS[lead.event_type] ?? { bg: "rgba(148,163,184,0.12)", color: "#94a3b8" };

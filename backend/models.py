@@ -2,6 +2,7 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
+    Boolean,
     Column,
     Date,
     DateTime,
@@ -72,6 +73,8 @@ class DecorTypeEnum(str, enum.Enum):
 
 class MenuCategoryEnum(str, enum.Enum):
     STARTERS = "Starters"
+    SNACKS = "Snacks"
+    INDIAN_CHAAT = "Indian Chaat"
     MAIN_COURSE = "Main Course"
     BREADS = "Breads"
     DESSERTS = "Desserts"
@@ -152,6 +155,9 @@ class Lead(Base):
     # Total cost (cached, recalculated)
     total_cost = Column(Float, default=0.0)
 
+    # Inventory
+    inventory_deducted = Column(Boolean, default=False)
+
     # Decor
     decor_type = Column(String, default="")
     decor_contractors = Column(Text, default="")  # comma-separated contractor IDs
@@ -177,6 +183,7 @@ class MenuItem(Base):
     cost_per_plate = Column(Float, default=0.0)
 
     lead = relationship("Lead", back_populates="menu_items")
+    ingredients = relationship("MenuItemIngredient", back_populates="menu_item", cascade="all, delete-orphan")
 
 
 class AddOn(Base):
@@ -211,3 +218,39 @@ class MenuCatalogItem(Base):
     name = Column(String, nullable=False)
     category = Column(String, nullable=False)
     cost_per_plate = Column(Float, default=0.0)
+
+    catalog_ingredients = relationship("CatalogIngredient", back_populates="catalog_item", cascade="all, delete-orphan")
+
+
+class InventoryItem(Base):
+    __tablename__ = "inventory_items"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    name = Column(String, nullable=False, unique=True)
+    unit = Column(String, nullable=False)  # e.g., kg, liters, units
+    quantity = Column(Float, default=0.0)
+    low_stock_threshold = Column(Float, default=0.0)
+
+
+class MenuItemIngredient(Base):
+    __tablename__ = "menu_item_ingredients"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    menu_item_id = Column(String, ForeignKey("menu_items.id"), nullable=False)
+    inventory_item_id = Column(String, ForeignKey("inventory_items.id"), nullable=False)
+    quantity_per_plate = Column(Float, default=0.0)
+
+    menu_item = relationship("MenuItem", back_populates="ingredients")
+    inventory_item = relationship("InventoryItem")
+
+
+class CatalogIngredient(Base):
+    __tablename__ = "catalog_ingredients"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    catalog_item_id = Column(String, ForeignKey("menu_catalog.id"), nullable=False)
+    inventory_item_id = Column(String, ForeignKey("inventory_items.id"), nullable=False)
+    quantity_per_plate = Column(Float, default=0.0)
+
+    catalog_item = relationship("MenuCatalogItem", back_populates="catalog_ingredients")
+    inventory_item = relationship("InventoryItem")

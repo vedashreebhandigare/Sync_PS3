@@ -12,4 +12,6 @@ export {
   ChevronDownIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
+  EditIcon,
+  FoodIcon,
 } from "./Icons";

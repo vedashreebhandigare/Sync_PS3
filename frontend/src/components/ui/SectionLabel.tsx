@@ -8,7 +8,7 @@ interface SectionLabelProps {
   children: ReactNode;
 }
 
-export function SectionLabel({ children }: SectionLabelProps): JSX.Element {
+export function SectionLabel({ children }: SectionLabelProps) {
   return (
     <div
       style={{
@@ -40,7 +40,7 @@ export function InfoRow({
   label,
   value,
   highlight = false,
-}: InfoRowProps): JSX.Element {
+}: InfoRowProps) {
   return (
     <div>
       <div

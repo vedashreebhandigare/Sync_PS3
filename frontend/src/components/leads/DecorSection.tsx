@@ -10,7 +10,7 @@ interface DecorSectionProps {
   onChangeContractors: (val: string) => void;
 }
 
-export default function DecorSection({ decorType, decorContractors, contractors, onChangeType, onChangeContractors }: DecorSectionProps): JSX.Element {
+export default function DecorSection({ decorType, decorContractors, contractors, onChangeType, onChangeContractors }: DecorSectionProps) {
   const selected = csvToArray(decorContractors);
 
   const toggleContractor = (id: string): void => {

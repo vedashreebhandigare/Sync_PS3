@@ -43,7 +43,7 @@ export default function KanbanBoard({
   onUpdateAddOns,
   contractors,
   catalog,
-}: KanbanBoardProps): JSX.Element {
+}: KanbanBoardProps) {
   const [collapsed, setCollapsed] = useState<Set<StageId>>(new Set());
 
   const toggle = (id: StageId): void => {

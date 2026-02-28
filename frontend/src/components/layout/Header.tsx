@@ -22,7 +22,7 @@ export default function Header({
   hasFilters,
   onAddLead,
   onImportCSV,
-}: HeaderProps): JSX.Element {
+}: HeaderProps) {
   return (
     <div style={{ background: "var(--bg-card)", borderBottom: "1px solid var(--border-default)", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

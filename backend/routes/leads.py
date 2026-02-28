@@ -13,6 +13,8 @@ from models import (
     AddOn,
     Lead,
     MenuItem,
+    MenuItemIngredient,
+    InventoryItem,
     Remark,
     STAGE_ORDER,
     TERMINAL_STAGES,
@@ -75,6 +77,21 @@ def _load_lead(db: Session, lead_id: str) -> Lead:
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     return lead
+
+
+def _handle_inventory_deduction(lead: Lead, target_stage: str, db: Session):
+    idx_advance = _stage_index("advance")
+    idx_target = _stage_index(target_stage) if target_stage not in TERMINAL_STAGES else 999
+    
+    # Deduct when crossing into 'advance' or later (including converted)
+    if idx_target >= idx_advance and not lead.inventory_deducted:
+        for menu_item in lead.menu_items:
+            for ing in menu_item.ingredients:
+                inv_item = db.query(InventoryItem).filter(InventoryItem.id == ing.inventory_item_id).first()
+                if inv_item:
+                    total_needed = ing.quantity_per_plate * lead.guest_count
+                    inv_item.quantity -= total_needed
+        lead.inventory_deducted = True
 
 
 # ---------------------------------------------------------------------------
@@ -183,6 +200,7 @@ def change_stage(lead_id: str, payload: StageChange, db: Session = Depends(get_d
     if tgt_idx < cur_idx and (cur_idx - tgt_idx) > 1:
         raise HTTPException(400, "Backward movement allowed only one step at a time")
 
+    _handle_inventory_deduction(lead, target, db)
     lead.stage = target
     db.commit()
     return _load_lead(db, lead.id)
@@ -235,6 +253,17 @@ def replace_menu(
             cost_per_plate=item.cost_per_plate,
         )
         db.add(mi)
+        
+        # Add ingredients
+        for ing in getattr(item, 'ingredients', []):
+            mii = MenuItemIngredient(
+                id=str(uuid.uuid4()),
+                menu_item_id=mi.id,
+                inventory_item_id=ing.inventory_item_id,
+                quantity_per_plate=ing.quantity_per_plate,
+            )
+            db.add(mii)
+            
         new_items.append(mi)
     lead.menu_items = new_items
     _recalc(lead)

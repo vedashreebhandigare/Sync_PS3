@@ -35,7 +35,7 @@ export const LEAD_SOURCES: LeadSource[] = [
 ];
 
 export const MENU_CATEGORIES = [
-  "Starters", "Main Course", "Breads", "Desserts", "Beverages",
+  "Starters", "Snacks", "Indian Chaat", "Main Course", "Breads", "Desserts", "Beverages",
 ] as const;
 
 // ============================================

@@ -15,7 +15,7 @@ export default function KanbanColumn({
   collapsed,
   onToggleCollapse,
   onSelectLead,
-}: KanbanColumnProps): JSX.Element {
+}: KanbanColumnProps) {
   if (collapsed) {
     return (
       <div onClick={onToggleCollapse}

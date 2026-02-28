@@ -11,6 +11,7 @@ from models import (
     Lead,
     MenuCatalogItem,
     MenuItem,
+    InventoryItem,
     Remark,
 )
 
@@ -59,9 +60,6 @@ def seed():
     db.add_all(halls)
     db.flush()
 
-    # ------------------------------------------------------------------
-    # Contractors
-    # ------------------------------------------------------------------
     contractors = [
         Contractor(id="cont-1", name="Raj Decorators", specialty="Floral & Stage", phone="9820000001"),
         Contractor(id="cont-2", name="Light Masters", specialty="Lighting & AV", phone="9820000002"),
@@ -70,6 +68,19 @@ def seed():
         Contractor(id="cont-5", name="Snap Studios", specialty="Photography & Video", phone="9820000005"),
     ]
     db.add_all(contractors)
+    db.flush()
+
+    # ------------------------------------------------------------------
+    # Logistics Inventory
+    # ------------------------------------------------------------------
+    inventory = [
+        InventoryItem(id=gen(), name="Potatoes", unit="kg", quantity=50.0, low_stock_threshold=10.0),
+        InventoryItem(id=gen(), name="Mineral Water", unit="bottles", quantity=200.0, low_stock_threshold=50.0),
+        InventoryItem(id=gen(), name="Coffee Beans", unit="kg", quantity=5.0, low_stock_threshold=2.0),
+        InventoryItem(id=gen(), name="Milk", unit="liters", quantity=20.0, low_stock_threshold=5.0),
+        InventoryItem(id=gen(), name="Tomatoes", unit="kg", quantity=30.0, low_stock_threshold=10.0),
+    ]
+    db.add_all(inventory)
     db.flush()
 
     # ------------------------------------------------------------------

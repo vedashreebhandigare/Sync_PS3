@@ -47,7 +47,7 @@ export default function AddLeadModal({
   branches,
   onClose,
   onAdd,
-}: AddLeadModalProps): JSX.Element {
+}: AddLeadModalProps) {
   const [form, setForm] = useState<FormState>({
     name: "",
     phone: "",

@@ -10,7 +10,7 @@ interface RemarksStackProps {
   onAddRemark: (text: string, author: string) => void;
 }
 
-export default function RemarksStack({ remarks, assignedTo, onAddRemark }: RemarksStackProps): JSX.Element {
+export default function RemarksStack({ remarks, assignedTo, onAddRemark }: RemarksStackProps) {
   const [text, setText] = useState<string>("");
 
   const handleAdd = (): void => {

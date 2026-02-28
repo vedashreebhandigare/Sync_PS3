@@ -19,7 +19,7 @@ const inputStyle: React.CSSProperties = {
   color: "var(--text-primary)",
 };
 
-export default function PostEventAddOns({ addOns, onSave }: PostEventAddOnsProps): JSX.Element {
+export default function PostEventAddOns({ addOns, onSave }: PostEventAddOnsProps) {
   const [newDesc, setNewDesc] = useState("");
   const [newCost, setNewCost] = useState("");
 

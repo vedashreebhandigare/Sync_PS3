@@ -1,15 +1,24 @@
 import { useState, useCallback } from "react";
 import { ChevronDownIcon } from "./Icons";
 
+type OptionItem = string | { label: string; value: string };
+
 interface DropdownFilterProps {
   label: string;
-  options: string[];
+  options: OptionItem[];
   value: string;
   onChange: (val: string) => void;
   allLabel?: string;
 }
 
-export default function DropdownFilter({ label, options, value, onChange, allLabel = "All" }: DropdownFilterProps): JSX.Element {
+function getLabel(opt: OptionItem): string {
+  return typeof opt === "string" ? opt : opt.label;
+}
+function getValue(opt: OptionItem): string {
+  return typeof opt === "string" ? opt : opt.value;
+}
+
+export default function DropdownFilter({ label, options, value, onChange, allLabel = "All" }: DropdownFilterProps) {
   const [open, setOpen] = useState<boolean>(false);
 
   const handleSelect = useCallback(
@@ -62,13 +71,15 @@ export default function DropdownFilter({ label, options, value, onChange, allLab
               overflowY: "auto",
             }}
           >
-            {[allLabel, ...options].map((opt) => {
+            {[allLabel, ...options].map((opt, idx) => {
               const isAll = opt === allLabel;
-              const active = isAll ? !value : value === opt;
+              const optVal = isAll ? "" : getValue(opt as OptionItem);
+              const optLabel = isAll ? allLabel : getLabel(opt as OptionItem);
+              const active = isAll ? !value : value === optVal;
               return (
                 <div
-                  key={opt}
-                  onClick={() => handleSelect(isAll ? "" : opt)}
+                  key={optVal || `all-${idx}`}
+                  onClick={() => handleSelect(optVal)}
                   style={{
                     padding: "7px 12px",
                     cursor: "pointer",
@@ -83,7 +94,7 @@ export default function DropdownFilter({ label, options, value, onChange, allLab
                   onMouseEnter={(e) => { if (!active) { (e.target as HTMLDivElement).style.background = "var(--bg-hover)"; } }}
                   onMouseLeave={(e) => { if (!active) { (e.target as HTMLDivElement).style.background = "transparent"; } }}
                 >
-                  {opt}
+                  {optLabel}
                 </div>
               );
             })}

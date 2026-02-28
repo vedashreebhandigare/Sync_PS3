@@ -13,7 +13,7 @@ interface Preview {
   file: File;
 }
 
-export default function CSVImportModal({ onClose, onImport }: CSVImportModalProps): JSX.Element {
+export default function CSVImportModal({ onClose, onImport }: CSVImportModalProps) {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);

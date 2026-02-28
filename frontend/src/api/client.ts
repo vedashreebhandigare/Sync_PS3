@@ -9,6 +9,7 @@ import type {
   Hall,
   Contractor,
   CatalogItem,
+  CatalogItemInput,
   MenuItem,
   AddOn,
   Remark,
@@ -16,9 +17,11 @@ import type {
   AddOnInput,
   SummaryStats,
   PipelineStat,
+  InventoryItem,
+  InventoryItemInput,
 } from "../types";
 
-const BASE = "http://localhost:8000";
+const BASE = "";
 
 // ============================================
 // GENERIC FETCH HELPER
@@ -149,6 +152,36 @@ export async function importCSV(file: File): Promise<{ imported: number }> {
 }
 
 // ============================================
+// INVENTORY
+// ============================================
+
+export async function fetchInventory(): Promise<InventoryItem[]> {
+  return request<InventoryItem[]>("/api/inventory");
+}
+
+export async function fetchToBuy(): Promise<InventoryItem[]> {
+  return request<InventoryItem[]>("/api/inventory/to-buy");
+}
+
+export async function createInventoryItem(data: InventoryItemInput): Promise<InventoryItem> {
+  return request<InventoryItem>("/api/inventory", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateInventoryItem(id: string, data: InventoryItemInput): Promise<InventoryItem> {
+  return request<InventoryItem>(`/api/inventory/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteInventoryItem(id: string): Promise<void> {
+  return request<void>(`/api/inventory/${id}`, { method: "DELETE" });
+}
+
+// ============================================
 // REFERENCE DATA
 // ============================================
 
@@ -166,6 +199,24 @@ export async function fetchContractors(): Promise<Contractor[]> {
 
 export async function fetchMenuCatalog(): Promise<CatalogItem[]> {
   return request<CatalogItem[]>("/api/menu-catalog");
+}
+
+export async function createMenuCatalogItem(data: CatalogItemInput): Promise<CatalogItem> {
+  return request<CatalogItem>("/api/menu-catalog", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateMenuCatalogItem(id: string, data: CatalogItemInput): Promise<CatalogItem> {
+  return request<CatalogItem>(`/api/menu-catalog/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteMenuCatalogItem(id: string): Promise<void> {
+  return request<void>(`/api/menu-catalog/${id}`, { method: "DELETE" });
 }
 
 // ============================================

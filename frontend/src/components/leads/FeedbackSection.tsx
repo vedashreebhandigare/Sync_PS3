@@ -12,7 +12,7 @@ export default function FeedbackSection({
   negatives,
   onChangePositives,
   onChangeNegatives,
-}: FeedbackSectionProps): JSX.Element {
+}: FeedbackSectionProps) {
   return (
     <div>
       <SectionLabel>Client Feedback</SectionLabel>

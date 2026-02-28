@@ -6,7 +6,7 @@ interface BadgeProps {
   bg: string;
 }
 
-export default function Badge({ children, color, bg }: BadgeProps): JSX.Element {
+export default function Badge({ children, color, bg }: BadgeProps) {
   return (
     <span
       style={{

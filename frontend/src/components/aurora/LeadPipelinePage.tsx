@@ -14,7 +14,7 @@ const SUMMARY_ITEMS = [
     { label: "Lost", getCount: (s: SummaryStats) => s.lost, color: "#f87171" },
 ] as const;
 
-export default function LeadPipelinePage(): JSX.Element {
+export default function LeadPipelinePage() {
     const {
         leads,
         filters,

@@ -11,7 +11,7 @@ import type {
   CatalogItem,
 } from "../../types";
 import { STAGES, TERMINAL_STAGES } from "../../constants";
-import { formatDate, daysUntil, isUrgent } from "../../utils";
+import { formatDate, isUrgent } from "../../utils";
 import { Button, Badge, XIcon, InfoRow } from "../ui";
 import HallSelector from "./HallSelector";
 import FoodPreferences from "./FoodPreferences";
@@ -36,7 +36,7 @@ interface LeadDetailPanelProps {
   catalog: CatalogItem[];
 }
 
-function SectionBlock({ children }: { children: React.ReactNode }): JSX.Element {
+function SectionBlock({ children }: { children: React.ReactNode }) {
   return <div style={{ background: "var(--bg-section)", borderRadius: "var(--radius-lg)", padding: 14, border: "1px solid var(--border-default)" }}>{children}</div>;
 }
 
@@ -51,7 +51,7 @@ export default function LeadDetailPanel({
   onUpdateAddOns,
   contractors,
   catalog,
-}: LeadDetailPanelProps): JSX.Element {
+}: LeadDetailPanelProps) {
   const stage = STAGES.find((s) => s.id === lead.stage);
   const stageIdx = STAGES.findIndex((s) => s.id === lead.stage);
   const isTerminal = TERMINAL_STAGES.includes(lead.stage);
@@ -75,9 +75,9 @@ export default function LeadDetailPanel({
 
   const showHall = ["new", "call", "visit"].includes(lead.stage);
   const showFood = ["visit", "tasting"].includes(lead.stage);
-  const showMenu = ["tasting", "menu", "advance"].includes(lead.stage);
-  const showAdvance = ["menu", "advance"].includes(lead.stage);
-  const showDecor = ["advance", "decor"].includes(lead.stage);
+  const showMenu = true; // Always show menu builder for easier access in Logistics
+  const showAdvance = ["menu", "advance", "decor", "fullpay", "post"].includes(lead.stage);
+  const showDecor = ["advance", "decor", "fullpay", "post"].includes(lead.stage);
   const showPostEvent = lead.stage === "post";
   const showFeedback = lead.stage === "feedback";
 

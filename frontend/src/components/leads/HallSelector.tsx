@@ -12,7 +12,7 @@ export default function HallSelector({
   halls,
   selectedHallId,
   onSelect,
-}: HallSelectorProps): JSX.Element {
+}: HallSelectorProps) {
   return (
     <div>
       <SectionLabel>Available Halls</SectionLabel>

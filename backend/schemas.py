@@ -40,12 +40,66 @@ class ContractorOut(BaseModel):
 # ---------------------------------------------------------------------------
 # Menu Catalog
 # ---------------------------------------------------------------------------
+class CatalogIngredientIn(BaseModel):
+    inventory_item_id: str
+    quantity_per_plate: float
+
+
+class CatalogIngredientOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    catalog_item_id: str
+    inventory_item_id: str
+    quantity_per_plate: float
+    inventory_item: Optional["InventoryItemOut"] = None
+
+
+class MenuCatalogItemIn(BaseModel):
+    name: str
+    category: str
+    cost_per_plate: float
+    catalog_ingredients: list[CatalogIngredientIn] = []
+
+
 class MenuCatalogItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
     name: str
     category: str
     cost_per_plate: float
+    catalog_ingredients: list[CatalogIngredientOut] = []
+
+# ---------------------------------------------------------------------------
+# Inventory and Ingredients
+# ---------------------------------------------------------------------------
+class InventoryItemIn(BaseModel):
+    name: str
+    unit: str
+    quantity: float = 0.0
+    low_stock_threshold: float = 0.0
+
+
+class InventoryItemOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    name: str
+    unit: str
+    quantity: float
+    low_stock_threshold: float
+
+
+class MenuItemIngredientIn(BaseModel):
+    inventory_item_id: str
+    quantity_per_plate: float
+
+
+class MenuItemIngredientOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    menu_item_id: str
+    inventory_item_id: str
+    quantity_per_plate: float
+    inventory_item: Optional[InventoryItemOut] = None
 
 
 # ---------------------------------------------------------------------------
@@ -55,6 +109,7 @@ class MenuItemIn(BaseModel):
     name: str
     category: str
     cost_per_plate: float
+    ingredients: list[MenuItemIngredientIn] = []
 
 
 class MenuItemOut(BaseModel):
@@ -63,6 +118,7 @@ class MenuItemOut(BaseModel):
     name: str
     category: str
     cost_per_plate: float
+    ingredients: list[MenuItemIngredientOut] = []
 
 
 class AddOnIn(BaseModel):
@@ -158,6 +214,7 @@ class LeadOut(BaseModel):
     advance_percent: int
     advance_paid: float
     total_cost: float
+    inventory_deducted: bool
 
     decor_type: str
     decor_contractors: str

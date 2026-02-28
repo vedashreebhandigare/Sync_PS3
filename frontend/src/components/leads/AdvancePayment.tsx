@@ -22,7 +22,7 @@ const inputStyle: React.CSSProperties = {
   color: "var(--text-primary)",
 };
 
-export default function AdvancePayment({ total_cost, menu_total, guest_count, advance_percent, advance_paid, onChangePercent, onChangePaid }: AdvancePaymentProps): JSX.Element {
+export default function AdvancePayment({ total_cost, menu_total, guest_count, advance_percent, advance_paid, onChangePercent, onChangePaid }: AdvancePaymentProps) {
   const estimatedTotal = total_cost || menu_total * guest_count;
   const requiredAdvance = Math.round((estimatedTotal * advance_percent) / 100);
 

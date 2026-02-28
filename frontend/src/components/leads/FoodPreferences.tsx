@@ -34,7 +34,7 @@ export default function FoodPreferences({
   allergies,
   onChangePreferences,
   onChangeAllergies,
-}: FoodPreferencesProps): JSX.Element {
+}: FoodPreferencesProps) {
   return (
     <div>
       <SectionLabel>Food Preferences & Allergies</SectionLabel>

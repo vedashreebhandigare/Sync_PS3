@@ -9,7 +9,7 @@ interface ModalProps {
   width?: number;
 }
 
-export default function Modal({ title, onClose, children, footer, width = 520 }: ModalProps): JSX.Element {
+export default function Modal({ title, onClose, children, footer, width = 520 }: ModalProps) {
   return (
     <>
       {/* Overlay */}

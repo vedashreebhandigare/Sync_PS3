@@ -42,7 +42,7 @@ export default function Button({
   disabled,
   style,
   ...props
-}: ButtonProps): JSX.Element {
+}: ButtonProps) {
   return (
     <button
       disabled={disabled}

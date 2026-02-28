@@ -44,12 +44,7 @@ export type LeadSource =
 
 export type DecorType = "" | "internal" | "external";
 
-export type MenuCategory =
-  | "Starters"
-  | "Main Course"
-  | "Breads"
-  | "Desserts"
-  | "Beverages";
+export type MenuCategory = "Starters" | "Snacks" | "Indian Chaat" | "Main Course" | "Breads" | "Desserts" | "Beverages";
 
 // ============================================
 // API RESPONSE TYPES (snake_case from backend)
@@ -59,6 +54,38 @@ export type MenuCategory =
 export interface Branch {
   id: string;
   name: string;
+}
+
+// ============================================
+// INVENTORY TYPES
+// ============================================
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  unit: string;
+  quantity: number;
+  low_stock_threshold: number;
+}
+
+export interface InventoryItemInput {
+  name: string;
+  unit: string;
+  quantity: number;
+  low_stock_threshold: number;
+}
+
+export interface MenuItemIngredient {
+  id: string;
+  menu_item_id: string;
+  inventory_item_id: string;
+  quantity_per_plate: number;
+  inventory_item?: InventoryItem;
+}
+
+export interface MenuItemIngredientInput {
+  inventory_item_id: string;
+  quantity_per_plate: number;
 }
 
 /** Returned by GET /api/branches/{id}/halls */
@@ -78,6 +105,7 @@ export interface MenuItem {
   name: string;
   category: MenuCategory;
   cost_per_plate: number;
+  ingredients: MenuItemIngredient[];
 }
 
 /** Sent to PUT /api/leads/{id}/menu (no id — backend generates) */
@@ -85,6 +113,20 @@ export interface MenuItemInput {
   name: string;
   category: MenuCategory;
   cost_per_plate: number;
+  ingredients: MenuItemIngredientInput[];
+}
+
+export interface CatalogIngredient {
+  id: string;
+  catalog_item_id: string;
+  inventory_item_id: string;
+  quantity_per_plate: number;
+  inventory_item?: InventoryItem;
+}
+
+export interface CatalogIngredientInput {
+  inventory_item_id: string;
+  quantity_per_plate: number;
 }
 
 /** Returned by GET /api/menu-catalog */
@@ -93,6 +135,14 @@ export interface CatalogItem {
   name: string;
   category: MenuCategory;
   cost_per_plate: number;
+  catalog_ingredients?: CatalogIngredient[];
+}
+
+export interface CatalogItemInput {
+  name: string;
+  category: string;
+  cost_per_plate: number;
+  catalog_ingredients: CatalogIngredientInput[];
 }
 
 /** Returned by GET /api/contractors */
@@ -147,6 +197,7 @@ export interface LeadBrief {
   created_at: string;
   total_cost: number;
   advance_paid: number;
+  inventory_deducted: boolean;
 }
 
 /** Returned by GET /api/leads/{id} (full detail with nested data) */

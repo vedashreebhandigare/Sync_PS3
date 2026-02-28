@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-export default function TopHeader(): JSX.Element {
+export default function TopHeader() {
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
