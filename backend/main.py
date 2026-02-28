@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import init_db
-from routes import branches, contractors, leads, menu_catalog, stats
+from routes import branches, contractors, leads, menu_catalog, stats, partners
 from seed import seed
 
 
@@ -32,6 +32,7 @@ app.include_router(branches.router)
 app.include_router(contractors.router)
 app.include_router(menu_catalog.router)
 app.include_router(stats.router)
+app.include_router(partners.router)
 
 
 @app.get("/")

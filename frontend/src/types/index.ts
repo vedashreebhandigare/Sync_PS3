@@ -3,6 +3,7 @@
 // ============================================
 
 export type StageId =
+  | "potential"
   | "new"
   | "call"
   | "visit"
@@ -40,7 +41,8 @@ export type LeadSource =
   | "Referral"
   | "Social Media"
   | "Google Ads"
-  | "WhatsApp";
+  | "WhatsApp"
+  | "Partner Referral";
 
 export type DecorType = "" | "internal" | "external";
 
@@ -126,6 +128,59 @@ export interface Remark {
 }
 
 // ============================================
+// PARTNER TYPES (Lead Generation)
+// ============================================
+
+/** Returned by GET /api/partners (with computed stats) */
+export interface Partner {
+  id: string;
+  name: string;
+  type: string;
+  contact_person: string;
+  phone: string;
+  email: string;
+  branch_id: string | null;
+  status: "active" | "inactive";
+  notes: string;
+  created_at: string;
+  leads_referred: number;
+  leads_converted: number;
+  conversion_rate: number;
+}
+
+/** Sent to POST /api/partners */
+export interface PartnerCreateInput {
+  name: string;
+  type: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  branch_id?: string | null;
+  status?: "active" | "inactive";
+  notes?: string;
+}
+
+/** Sent to PUT /api/partners/:id */
+export interface PartnerUpdateInput {
+  name?: string;
+  type?: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  branch_id?: string | null;
+  status?: "active" | "inactive";
+  notes?: string;
+}
+
+/** Returned by GET /api/partners/summary */
+export interface PartnerSummary {
+  active_partners: number;
+  total_referred: number;
+  total_converted: number;
+  conversion_rate: number;
+}
+
+// ============================================
 // LEAD TYPES
 // ============================================
 
@@ -147,6 +202,7 @@ export interface LeadBrief {
   created_at: string;
   total_cost: number;
   advance_paid: number;
+  referred_by_partner_id: string | null;
 }
 
 /** Returned by GET /api/leads/{id} (full detail with nested data) */
@@ -181,6 +237,7 @@ export interface LeadCreateInput {
   food_preferences?: string;
   allergies?: string;
   advance_percent?: number;
+  referred_by_partner_id?: string | null;
 }
 
 /** Sent to PUT /api/leads/{id} (partial update) */
@@ -204,6 +261,7 @@ export interface LeadUpdateInput {
   decor_contractors?: string;
   feedback_positives?: string;
   feedback_negatives?: string;
+  referred_by_partner_id?: string | null;
 }
 
 // ============================================
@@ -220,6 +278,7 @@ export interface SummaryStats {
   active: number;
   converted: number;
   lost: number;
+  potential: number;
 }
 
 // ============================================
