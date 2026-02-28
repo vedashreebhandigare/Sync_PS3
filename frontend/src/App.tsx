@@ -1,35 +1,67 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import { Header, FilterBar } from "./components/layout";
+import { KanbanBoard, AddLeadModal, CSVImportModal } from "./components/leads";
+import useLeads from "./hooks/useLeads";
+import "./styles/index.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App(): JSX.Element {
+  const {
+    filteredLeads,
+    filters,
+    setFilters,
+    stageCounts,
+    hasActiveFilters,
+    updateLead,
+    moveStage,
+    addLead,
+    importCSV,
+  } = useLeads();
+
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [showCSVModal, setShowCSVModal] = useState<boolean>(false);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <div
+      style={{
+        fontFamily: "var(--font-primary)",
+        background: "var(--bg-app)",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Header with stats + action buttons */}
+      <Header
+        totalLeads={filteredLeads.length}
+        stageCounts={stageCounts}
+        hasFilters={hasActiveFilters}
+        onAddLead={() => setShowAddModal(true)}
+        onImportCSV={() => setShowCSVModal(true)}
+      />
 
-export default App
+      {/* Filter bar */}
+      <FilterBar filters={filters} onChangeFilters={setFilters} />
+
+      {/* Kanban board + detail panel */}
+      <KanbanBoard
+        leads={filteredLeads}
+        onUpdateLead={updateLead}
+        onMoveStage={moveStage}
+      />
+
+      {/* Modals */}
+      {showAddModal && (
+        <AddLeadModal
+          onClose={() => setShowAddModal(false)}
+          onAdd={addLead}
+        />
+      )}
+      {showCSVModal && (
+        <CSVImportModal
+          onClose={() => setShowCSVModal(false)}
+          onImport={importCSV}
+        />
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,171 @@
+/* ============================================
+   FONTS
+   ============================================ */
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap");
+
+/* ============================================
+   CSS CUSTOM PROPERTIES
+   ============================================ */
+:root {
+  --font-primary: "Outfit", system-ui, -apple-system, sans-serif;
+
+  /* Colors - Primitives */
+  --bg-app: #f7f6f9;
+  --bg-card: #ffffff;
+  --bg-section: #faf9fc;
+  --bg-hover: #f5f4f7;
+  --bg-input: #ffffff;
+
+  /* Text */
+  --text-primary: #1a1726;
+  --text-secondary: #706b80;
+  --text-muted: #a09baf;
+
+  /* Borders */
+  --border-default: #e8e5ef;
+  --border-light: #f0eef4;
+
+  /* Accent */
+  --accent: #6d5cff;
+  --accent-bg: #f0edff;
+  --accent-hover: #5b4ae0;
+
+  /* Semantic */
+  --danger: #e5484d;
+  --danger-bg: #fef2f2;
+  --danger-border: #f9c6c6;
+  --success: #30a46c;
+  --success-bg: #f0fdf4;
+  --success-border: #b8e6c8;
+  --warning: #f5a623;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
+  --shadow-panel: -8px 0 40px rgba(0, 0, 0, 0.15);
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+}
+
+/* ============================================
+   RESET & BASE
+   ============================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-primary);
+  background: var(--bg-app);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+input,
+select,
+textarea,
+button {
+  font-family: var(--font-primary);
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4d0de;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b0abbd;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.animate-slide-in {
+  animation: slideInRight 0.25s ease-out;
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease;
+}
+.animate-fade-up {
+  animation: fadeUp 0.25s ease;
+}
