@@ -1,3 +1,4 @@
+import { getAuthToken } from "../hooks/useAuth";
 import type {
   LeadBrief,
   LeadFull,
@@ -25,17 +26,37 @@ import type {
 const BASE = "http://localhost:8000";
 
 // ============================================
-// GENERIC FETCH HELPER
+// GENERIC FETCH HELPER (with auth)
 // ============================================
 
 async function request<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
+  const token = getAuthToken();
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string> || {}),
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers,
   });
+
+  if (res.status === 401) {
+    // Token expired — clear storage and redirect to login
+    localStorage.removeItem("banquet_access_token");
+    localStorage.removeItem("banquet_user");
+    window.location.reload();
+    throw new Error("Session expired. Please log in again.");
+  }
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.detail ?? `API ${res.status}`);
@@ -139,10 +160,16 @@ export async function replaceAddOns(
 }
 
 export async function importCSV(file: File): Promise<{ imported: number }> {
+  const token = getAuthToken();
   const form = new FormData();
   form.append("file", file);
+
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
   const res = await fetch(`${BASE}/api/leads/import-csv`, {
     method: "POST",
+    headers,
     body: form,
   });
   if (!res.ok) {
@@ -187,7 +214,7 @@ export async function fetchPipeline(branch?: string): Promise<PipelineStat[]> {
 }
 
 // ============================================
-// PARTNERS (Lead Generation)
+// PARTNERS
 // ============================================
 
 export async function fetchPartners(params?: {

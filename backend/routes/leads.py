@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
+from auth import get_branch_filter, get_current_user
 from database import get_db
 from models import (
     AddOn,
@@ -15,6 +16,7 @@ from models import (
     MenuItem,
     Partner,
     Remark,
+    User,
     STAGE_ORDER,
     TERMINAL_STAGES,
 )
@@ -54,10 +56,8 @@ def _stage_index(stage: str) -> int:
 
 def _auto_advance(lead: Lead):
     """Apply auto-advance rules after field changes."""
-    # Rule 1: hall selected + stage is visit → tasting
     if lead.selected_hall_id and lead.stage == "visit":
         lead.stage = "tasting"
-    # Rule 2: menu goes from empty to non-empty + stage is tasting → menu
     if lead.menu_items and lead.stage == "tasting":
         lead.stage = "menu"
 
@@ -78,12 +78,13 @@ def _load_lead(db: Session, lead_id: str) -> Lead:
     return lead
 
 
-def _resolve_initial_stage(source: str, partner_id: Optional[str]) -> str:
-    """Determine the starting stage for a new lead.
+def _check_branch_access(lead: Lead, branch_filter: Optional[str]):
+    """Ensure branch manager can only access their own branch's leads."""
+    if branch_filter and lead.branch != branch_filter:
+        raise HTTPException(status_code=403, detail="Access denied to this lead")
 
-    - Partner referrals start at 'potential' (need qualification first)
-    - All other sources start at 'new'
-    """
+
+def _resolve_initial_stage(source: str, partner_id: Optional[str]) -> str:
     if source == "Partner Referral" or partner_id:
         return "potential"
     return "new"
@@ -101,8 +102,16 @@ def list_leads(
     stage: Optional[str] = Query(None),
     partner_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
 ):
     q = db.query(Lead)
+
+    # Branch managers always see only their branch
+    if branch_filter:
+        q = q.filter(Lead.branch == branch_filter)
+    elif branch:
+        q = q.filter(Lead.branch == branch)
+
     if search:
         pattern = f"%{search}%"
         q = q.filter(
@@ -110,8 +119,6 @@ def list_leads(
             | (Lead.phone.ilike(pattern))
             | (Lead.email.ilike(pattern))
         )
-    if branch:
-        q = q.filter(Lead.branch == branch)
     if event_type:
         q = q.filter(Lead.event_type == event_type)
     if source:
@@ -124,13 +131,26 @@ def list_leads(
 
 
 @router.get("/{lead_id}", response_model=LeadOut)
-def get_lead(lead_id: str, db: Session = Depends(get_db)):
-    return _load_lead(db, lead_id)
+def get_lead(
+    lead_id: str,
+    db: Session = Depends(get_db),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
+):
+    lead = _load_lead(db, lead_id)
+    _check_branch_access(lead, branch_filter)
+    return lead
 
 
 @router.post("", response_model=LeadOut, status_code=201)
-def create_lead(payload: LeadCreate, db: Session = Depends(get_db)):
-    # Validate partner if provided
+def create_lead(
+    payload: LeadCreate,
+    db: Session = Depends(get_db),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
+):
+    # Branch manager can only create leads for their own branch
+    if branch_filter and payload.branch != branch_filter:
+        raise HTTPException(status_code=403, detail="Cannot create leads for another branch")
+
     if payload.referred_by_partner_id:
         partner = db.query(Partner).filter(
             Partner.id == payload.referred_by_partner_id
@@ -163,7 +183,6 @@ def create_lead(payload: LeadCreate, db: Session = Depends(get_db)):
         created_at=datetime.utcnow(),
     )
 
-    # Auto-remark
     remark_text = "Lead created."
     if payload.referred_by_partner_id:
         partner = db.query(Partner).filter(
@@ -186,8 +205,14 @@ def create_lead(payload: LeadCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{lead_id}", response_model=LeadOut)
-def update_lead(lead_id: str, payload: LeadUpdate, db: Session = Depends(get_db)):
+def update_lead(
+    lead_id: str,
+    payload: LeadUpdate,
+    db: Session = Depends(get_db),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
+):
     lead = _load_lead(db, lead_id)
+    _check_branch_access(lead, branch_filter)
     data = payload.model_dump(exclude_unset=True)
     for key, val in data.items():
         setattr(lead, key, val)
@@ -198,20 +223,21 @@ def update_lead(lead_id: str, payload: LeadUpdate, db: Session = Depends(get_db)
 
 
 @router.patch("/{lead_id}/stage", response_model=LeadOut)
-def change_stage(lead_id: str, payload: StageChange, db: Session = Depends(get_db)):
+def change_stage(
+    lead_id: str,
+    payload: StageChange,
+    db: Session = Depends(get_db),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
+):
     lead = _load_lead(db, lead_id)
+    _check_branch_access(lead, branch_filter)
     current = lead.stage
     target = payload.stage
 
-    # Validate target
     if target not in [s for s in STAGE_ORDER] + list(TERMINAL_STAGES):
         raise HTTPException(400, f"Invalid stage: {target}")
-
-    # Terminal stages — no forward movement
     if current in TERMINAL_STAGES:
         raise HTTPException(400, f"Cannot move from terminal stage '{current}'")
-
-    # Jump to terminal is always allowed
     if target in TERMINAL_STAGES:
         lead.stage = target
         db.commit()
@@ -219,9 +245,6 @@ def change_stage(lead_id: str, payload: StageChange, db: Session = Depends(get_d
 
     cur_idx = _stage_index(current)
     tgt_idx = _stage_index(target)
-
-    # Forward movement (any number of steps) allowed
-    # Backward movement only one step
     if tgt_idx < cur_idx and (cur_idx - tgt_idx) > 1:
         raise HTTPException(400, "Backward movement allowed only one step at a time")
 
@@ -231,8 +254,13 @@ def change_stage(lead_id: str, payload: StageChange, db: Session = Depends(get_d
 
 
 @router.delete("/{lead_id}", status_code=204)
-def delete_lead(lead_id: str, db: Session = Depends(get_db)):
+def delete_lead(
+    lead_id: str,
+    db: Session = Depends(get_db),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
+):
     lead = _load_lead(db, lead_id)
+    _check_branch_access(lead, branch_filter)
     db.delete(lead)
     db.commit()
     return None
@@ -242,8 +270,14 @@ def delete_lead(lead_id: str, db: Session = Depends(get_db)):
 # Sub-resources
 # ---------------------------------------------------------------------------
 @router.post("/{lead_id}/remarks", response_model=RemarkOut, status_code=201)
-def add_remark(lead_id: str, payload: RemarkIn, db: Session = Depends(get_db)):
+def add_remark(
+    lead_id: str,
+    payload: RemarkIn,
+    db: Session = Depends(get_db),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
+):
     lead = _load_lead(db, lead_id)
+    _check_branch_access(lead, branch_filter)
     remark = Remark(
         lead_id=lead.id,
         text=payload.text,
@@ -259,14 +293,16 @@ def add_remark(lead_id: str, payload: RemarkIn, db: Session = Depends(get_db)):
 
 @router.put("/{lead_id}/menu", response_model=list[MenuItemOut])
 def replace_menu(
-    lead_id: str, items: list[MenuItemIn], db: Session = Depends(get_db)
+    lead_id: str,
+    items: list[MenuItemIn],
+    db: Session = Depends(get_db),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
 ):
     lead = _load_lead(db, lead_id)
-    # Clear existing
+    _check_branch_access(lead, branch_filter)
     for mi in lead.menu_items:
         db.delete(mi)
     db.flush()
-    # Add new
     new_items = []
     for item in items:
         mi = MenuItem(
@@ -286,8 +322,14 @@ def replace_menu(
 
 
 @router.put("/{lead_id}/hall", response_model=LeadOut)
-def set_hall(lead_id: str, payload: HallSelect, db: Session = Depends(get_db)):
+def set_hall(
+    lead_id: str,
+    payload: HallSelect,
+    db: Session = Depends(get_db),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
+):
     lead = _load_lead(db, lead_id)
+    _check_branch_access(lead, branch_filter)
     lead.selected_hall_id = payload.hall_id
     _auto_advance(lead)
     db.commit()
@@ -296,9 +338,13 @@ def set_hall(lead_id: str, payload: HallSelect, db: Session = Depends(get_db)):
 
 @router.put("/{lead_id}/addons", response_model=list[AddOnOut])
 def replace_addons(
-    lead_id: str, items: list[AddOnIn], db: Session = Depends(get_db)
+    lead_id: str,
+    items: list[AddOnIn],
+    db: Session = Depends(get_db),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
 ):
     lead = _load_lead(db, lead_id)
+    _check_branch_access(lead, branch_filter)
     for ao in lead.add_ons:
         db.delete(ao)
     db.flush()
@@ -321,20 +367,30 @@ def replace_addons(
 # CSV Import
 # ---------------------------------------------------------------------------
 @router.post("/import-csv", status_code=201)
-async def import_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def import_csv(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
+):
     content = await file.read()
     text = content.decode("utf-8-sig")
     reader = csv.DictReader(io.StringIO(text))
     count = 0
     for row in reader:
+        row_branch = row.get("branch", "")
+
+        # Branch manager can only import for their branch
+        if branch_filter and row_branch and row_branch != branch_filter:
+            continue  # skip rows for other branches
+
         source = row.get("source", "Walk-in")
         partner_id = row.get("partnerID", "").strip() or None
 
-        # Validate partner if provided in CSV
         if partner_id:
             partner = db.query(Partner).filter(Partner.id == partner_id).first()
             if not partner:
-                partner_id = None  # skip invalid partner, don't fail the row
+                partner_id = None
 
         initial_stage = _resolve_initial_stage(source, partner_id)
 
@@ -347,7 +403,7 @@ async def import_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
             event_date=date.fromisoformat(row.get("eventDate", str(date.today()))),
             guest_count=int(row.get("guestCount", 0)),
             budget=row.get("budget", ""),
-            branch=row.get("branch", ""),
+            branch=branch_filter or row_branch,
             source=source,
             assigned_to=row.get("assignedTo", ""),
             stage=initial_stage,

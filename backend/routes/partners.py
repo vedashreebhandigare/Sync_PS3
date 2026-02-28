@@ -6,8 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from auth import get_branch_filter, get_current_user
 from database import get_db
-from models import Lead, Partner, TERMINAL_STAGES
+from models import Lead, Partner, User, TERMINAL_STAGES
 from schemas import PartnerCreate, PartnerOut, PartnerStats, PartnerUpdate
 
 router = APIRouter(prefix="/api/partners", tags=["partners"])
@@ -17,7 +18,6 @@ router = APIRouter(prefix="/api/partners", tags=["partners"])
 # Helpers
 # ---------------------------------------------------------------------------
 def _compute_stats(db: Session, partner: Partner) -> PartnerStats:
-    """Enrich a partner record with referral statistics."""
     referred = db.query(func.count(Lead.id)).filter(
         Lead.referred_by_partner_id == partner.id
     ).scalar() or 0
@@ -55,13 +55,21 @@ def list_partners(
     branch_id: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
 ):
-    """List all partners with computed referral stats."""
     q = db.query(Partner)
     if status:
         q = q.filter(Partner.status == status)
-    if branch_id:
+
+    # Branch manager sees: partners for their branch + global partners (branch_id=None)
+    if branch_filter:
+        q = q.filter(
+            (Partner.branch_id == branch_filter) | (Partner.branch_id.is_(None))
+        )
+    elif branch_id:
         q = q.filter(Partner.branch_id == branch_id)
+
     if search:
         pattern = f"%{search}%"
         q = q.filter(
@@ -75,21 +83,28 @@ def list_partners(
 
 
 @router.get("/summary")
-def partner_summary(db: Session = Depends(get_db)):
-    """Aggregate stats for the lead generation dashboard header."""
-    total_active = db.query(func.count(Partner.id)).filter(
-        Partner.status == "active"
-    ).scalar() or 0
-
-    total_referred = db.query(func.count(Lead.id)).filter(
-        Lead.referred_by_partner_id.isnot(None)
-    ).scalar() or 0
-
-    total_converted = db.query(func.count(Lead.id)).filter(
+def partner_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
+):
+    partner_q = db.query(func.count(Partner.id)).filter(Partner.status == "active")
+    referred_q = db.query(func.count(Lead.id)).filter(Lead.referred_by_partner_id.isnot(None))
+    converted_q = db.query(func.count(Lead.id)).filter(
         Lead.referred_by_partner_id.isnot(None),
         Lead.stage == "converted",
-    ).scalar() or 0
+    )
 
+    if branch_filter:
+        partner_q = partner_q.filter(
+            (Partner.branch_id == branch_filter) | (Partner.branch_id.is_(None))
+        )
+        referred_q = referred_q.filter(Lead.branch == branch_filter)
+        converted_q = converted_q.filter(Lead.branch == branch_filter)
+
+    total_active = partner_q.scalar() or 0
+    total_referred = referred_q.scalar() or 0
+    total_converted = converted_q.scalar() or 0
     rate = round((total_converted / total_referred) * 100, 1) if total_referred > 0 else 0.0
 
     return {
@@ -101,7 +116,11 @@ def partner_summary(db: Session = Depends(get_db)):
 
 
 @router.get("/{partner_id}", response_model=PartnerStats)
-def get_partner(partner_id: str, db: Session = Depends(get_db)):
+def get_partner(
+    partner_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     partner = db.query(Partner).filter(Partner.id == partner_id).first()
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")
@@ -109,7 +128,16 @@ def get_partner(partner_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=PartnerStats, status_code=201)
-def create_partner(payload: PartnerCreate, db: Session = Depends(get_db)):
+def create_partner(
+    payload: PartnerCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
+):
+    # Branch manager can only create partners for their branch
+    if branch_filter and payload.branch_id and payload.branch_id != branch_filter:
+        raise HTTPException(403, "Cannot create partners for another branch")
+
     partner = Partner(
         id=str(uuid.uuid4()),
         name=payload.name,
@@ -117,7 +145,7 @@ def create_partner(payload: PartnerCreate, db: Session = Depends(get_db)):
         contact_person=payload.contact_person,
         phone=payload.phone,
         email=payload.email,
-        branch_id=payload.branch_id,
+        branch_id=payload.branch_id if not branch_filter else (payload.branch_id or branch_filter),
         status=payload.status,
         notes=payload.notes,
         created_at=datetime.utcnow(),
@@ -129,7 +157,12 @@ def create_partner(payload: PartnerCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{partner_id}", response_model=PartnerStats)
-def update_partner(partner_id: str, payload: PartnerUpdate, db: Session = Depends(get_db)):
+def update_partner(
+    partner_id: str,
+    payload: PartnerUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     partner = db.query(Partner).filter(Partner.id == partner_id).first()
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")
@@ -144,12 +177,15 @@ def update_partner(partner_id: str, payload: PartnerUpdate, db: Session = Depend
 
 
 @router.delete("/{partner_id}", status_code=204)
-def delete_partner(partner_id: str, db: Session = Depends(get_db)):
+def delete_partner(
+    partner_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     partner = db.query(Partner).filter(Partner.id == partner_id).first()
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")
 
-    # Unlink any leads that reference this partner (don't delete the leads)
     db.query(Lead).filter(
         Lead.referred_by_partner_id == partner_id
     ).update({"referred_by_partner_id": None})
@@ -167,20 +203,19 @@ def create_referral_lead(
     partner_id: str,
     payload: dict,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    branch_filter: Optional[str] = Depends(get_branch_filter),
 ):
-    """
-    Convenience endpoint: creates a lead in 'potential' stage
-    with source='Partner Referral' and the partner linked automatically.
-
-    Expects body: { name, phone?, email?, event_type, event_date, guest_count?,
-                    budget?, branch, assigned_to? }
-    """
     from models import Remark
     from datetime import date as dt_date
 
     partner = db.query(Partner).filter(Partner.id == partner_id).first()
     if not partner:
         raise HTTPException(status_code=404, detail="Partner not found")
+
+    target_branch = payload.get("branch", partner.branch_id or "")
+    if branch_filter and target_branch != branch_filter:
+        raise HTTPException(403, "Cannot create leads for another branch")
 
     lead = Lead(
         id=str(uuid.uuid4()),
@@ -191,7 +226,7 @@ def create_referral_lead(
         event_date=payload.get("event_date", dt_date.today()),
         guest_count=int(payload.get("guest_count", 0)),
         budget=payload.get("budget", ""),
-        branch=payload.get("branch", partner.branch_id or ""),
+        branch=target_branch,
         source="Partner Referral",
         stage="potential",
         assigned_to=payload.get("assigned_to", ""),

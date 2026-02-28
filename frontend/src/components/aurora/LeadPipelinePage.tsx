@@ -1,159 +1,980 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import useLeads from "../../hooks/useLeads";
 import useReferenceData from "../../hooks/useReferenceData";
-import KanbanBoard from "../leads/KanbanBoard";
-import { AddLeadModal, CSVImportModal } from "../leads";
-import { Button, Modal } from "../ui";
-import { STAGES, EVENT_TYPES, LEAD_SOURCES } from "../../constants";
-import type { SummaryStats, Partner, PartnerCreateInput, PartnerUpdateInput, PartnerSummary, Branch } from "../../types";
+import { AddLeadModal, CSVImportModal, LeadDetailPanel } from "../leads";
+import { Button, Badge, SectionLabel, XIcon, InfoRow } from "../ui";
+import { STAGES, EVENT_TYPES, LEAD_SOURCES, TERMINAL_STAGES } from "../../constants";
+import { formatDate, daysUntil, isUrgent, currency } from "../../utils";
+import type {
+  SummaryStats,
+  LeadBrief,
+  LeadFull,
+  LeadUpdateInput,
+  StageId,
+  MenuItemInput,
+  AddOnInput,
+  Partner,
+  PartnerCreateInput,
+  PartnerUpdateInput,
+  PartnerSummary,
+  Branch,
+  Contractor,
+  CatalogItem,
+  Hall,
+} from "../../types";
 import * as partnerApi from "../../api/client";
 
-/* ─── Tabs ─── */
+/* ─── Tabs & Views ─── */
 type ActiveTab = "pipeline" | "generation";
+type PipelineView = "landing" | "viewLeads" | "viewClient";
 
 /* ─── Stage summary items shown in page header ─── */
 const SUMMARY_ITEMS = [
-    { label: "New", getCount: (s: SummaryStats) => s.new, color: "#6366f1" },
-    { label: "Active", getCount: (s: SummaryStats) => s.active, color: "#f59e0b" },
-    { label: "Won", getCount: (s: SummaryStats) => s.converted, color: "#22d3a7" },
-    { label: "Lost", getCount: (s: SummaryStats) => s.lost, color: "#f87171" },
+  { label: "New", getCount: (s: SummaryStats) => s.new, color: "#6366f1" },
+  { label: "Active", getCount: (s: SummaryStats) => s.active, color: "#f59e0b" },
+  { label: "Won", getCount: (s: SummaryStats) => s.converted, color: "#22d3a7" },
+  { label: "Lost", getCount: (s: SummaryStats) => s.lost, color: "#f87171" },
 ] as const;
+
+/* ─── Event-type color map (reused from LeadCard) ─── */
+const EVENT_STYLE: Record<string, { border: string; bg: string; color: string }> = {
+  Wedding: { border: "#fbbf24", bg: "rgba(251,191,36,0.15)", color: "#fbbf24" },
+  "Corporate Event": { border: "#60a5fa", bg: "rgba(96,165,250,0.15)", color: "#60a5fa" },
+  Reception: { border: "#f472b6", bg: "rgba(244,114,182,0.15)", color: "#f472b6" },
+  "Birthday Party": { border: "#a78bfa", bg: "rgba(167,139,250,0.15)", color: "#a78bfa" },
+  Conference: { border: "#38bdf8", bg: "rgba(56,189,248,0.15)", color: "#38bdf8" },
+  Anniversary: { border: "#fb923c", bg: "rgba(251,146,60,0.15)", color: "#fb923c" },
+  Engagement: { border: "#e879f9", bg: "rgba(232,121,249,0.15)", color: "#e879f9" },
+  "Social Gathering": { border: "#94a3b8", bg: "rgba(148,163,184,0.15)", color: "#94a3b8" },
+};
+const DEFAULT_EVENT_STYLE = { border: "#94a3b8", bg: "rgba(148,163,184,0.12)", color: "#94a3b8" };
 
 
 /* ═══════════════════════════════════════════════════════════
-   Add / Edit Partner Modal
+   LANDING CARDS CONFIG
    ═══════════════════════════════════════════════════════════ */
-interface PartnerModalProps {
-    branches: Branch[];
-    partner?: Partner | null;
-    onClose: () => void;
-    onSave: (data: PartnerCreateInput | PartnerUpdateInput, id?: string) => Promise<void>;
-}
-
-const partnerInputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "8px 10px",
-    border: "1.5px solid var(--border-default)",
-    borderRadius: "var(--radius-md)",
-    fontSize: 13,
-    fontFamily: "var(--font-primary)",
-    outline: "none",
-    background: "var(--bg-input)",
-    color: "var(--text-primary)",
-};
-
-const partnerLabelStyle: React.CSSProperties = {
-    fontSize: 11,
-    fontWeight: 600,
-    color: "var(--text-secondary)",
-    fontFamily: "var(--font-primary)",
-    marginBottom: 4,
-    display: "block",
-};
-
-const PARTNER_TYPES = [
-    "Jewellery Shop",
-    "Wedding Planner",
-    "Clothing Store",
-    "Catering Partner",
-    "Photography Studio",
-    "Makeup Artist",
-    "Florist",
-    "DJ / Entertainment",
-    "Travel Agent",
-    "Other",
+const LANDING_CARDS: {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  accentColor: string;
+}[] = [
+  {
+    id: "add",
+    title: "Add New Lead",
+    subtitle: "Create a fresh enquiry manually",
+    icon: "➕",
+    accentColor: "#6366f1",
+  },
+  {
+    id: "import",
+    title: "Import CSV",
+    subtitle: "Bulk import leads from a file",
+    icon: "📄",
+    accentColor: "#a78bfa",
+  },
+  {
+    id: "view",
+    title: "View Leads",
+    subtitle: "Browse all leads grouped by stage",
+    icon: "📋",
+    accentColor: "#22d3a7",
+  },
+  {
+    id: "client",
+    title: "View Specific Client",
+    subtitle: "Search and view a client's journey",
+    icon: "🔍",
+    accentColor: "#f59e0b",
+  },
 ];
 
-function PartnerModal({ branches, partner, onClose, onSave }: PartnerModalProps): JSX.Element {
-    const isEdit = !!partner;
 
-    const [form, setForm] = useState({
-        name: partner?.name ?? "",
-        type: partner?.type ?? PARTNER_TYPES[0],
-        contact_person: partner?.contact_person ?? "",
-        phone: partner?.phone ?? "",
-        email: partner?.email ?? "",
-        branch_id: partner?.branch_id ?? "",
-        notes: partner?.notes ?? "",
-    });
-    const [saving, setSaving] = useState(false);
-
-    const set = (key: string, val: string) => setForm((p) => ({ ...p, [key]: val }));
-
-    const handleSubmit = async () => {
-        if (!form.name.trim() || !form.type.trim()) return;
-        setSaving(true);
-        try {
-            const payload = {
-                ...form,
-                branch_id: form.branch_id || null,
-            };
-            await onSave(payload, partner?.id);
-            onClose();
-        } catch (err) {
-            alert(`Failed to save: ${err instanceof Error ? err.message : "Unknown error"}`);
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    return (
-        <Modal
-            title={isEdit ? "Edit Partner" : "Add Partner Source"}
-            onClose={onClose}
-            footer={
-                <>
-                    <Button variant="secondary" onClick={onClose}>Cancel</Button>
-                    <Button variant="primary" onClick={handleSubmit} disabled={saving}>
-                        {saving ? "Saving…" : isEdit ? "Save Changes" : "Add Partner"}
-                    </Button>
-                </>
-            }
-        >
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div style={{ gridColumn: "1 / -1" }}>
-                    <label style={partnerLabelStyle}>Partner / Business Name *</label>
-                    <input placeholder="e.g. Rajesh Jewellers" value={form.name} onChange={(e) => set("name", e.target.value)} style={partnerInputStyle} />
-                </div>
-                <div>
-                    <label style={partnerLabelStyle}>Type *</label>
-                    <select value={form.type} onChange={(e) => set("type", e.target.value)} style={partnerInputStyle}>
-                        {PARTNER_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                </div>
-                <div>
-                    <label style={partnerLabelStyle}>Contact Person</label>
-                    <input placeholder="Contact name" value={form.contact_person} onChange={(e) => set("contact_person", e.target.value)} style={partnerInputStyle} />
-                </div>
-                <div>
-                    <label style={partnerLabelStyle}>Phone</label>
-                    <input placeholder="Phone number" value={form.phone} onChange={(e) => set("phone", e.target.value)} style={partnerInputStyle} />
-                </div>
-                <div>
-                    <label style={partnerLabelStyle}>Email</label>
-                    <input type="email" placeholder="Email" value={form.email} onChange={(e) => set("email", e.target.value)} style={partnerInputStyle} />
-                </div>
-                <div>
-                    <label style={partnerLabelStyle}>Branch (optional)</label>
-                    <select value={form.branch_id} onChange={(e) => set("branch_id", e.target.value)} style={partnerInputStyle}>
-                        <option value="">All Branches</option>
-                        {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                    </select>
-                </div>
-                <div style={{ gridColumn: "1 / -1" }}>
-                    <label style={partnerLabelStyle}>Notes</label>
-                    <textarea
-                        placeholder="Any notes about this partnership..."
-                        value={form.notes}
-                        onChange={(e) => set("notes", e.target.value)}
-                        style={{ ...partnerInputStyle, minHeight: 60, resize: "vertical" } as React.CSSProperties}
-                    />
-                </div>
-            </div>
-        </Modal>
-    );
+/* ═══════════════════════════════════════════════════════════
+   BackButton — consistent navigation
+   ═══════════════════════════════════════════════════════════ */
+function BackButton({ onClick, label = "Back" }: { onClick: () => void; label?: string }): JSX.Element {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: "none",
+        border: "none",
+        color: "var(--text-secondary)",
+        fontFamily: "var(--font-primary)",
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "4px 0",
+        marginBottom: 14,
+        transition: "color var(--transition-fast)",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-secondary)"; }}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 12H5" /><path d="M12 19l-7-7 7-7" />
+      </svg>
+      {label}
+    </button>
+  );
 }
 
+
+/* ═══════════════════════════════════════════════════════════
+   VIEW: Landing — 4 Card Grid
+   ═══════════════════════════════════════════════════════════ */
+interface LandingViewProps {
+  summary: SummaryStats;
+  leadCount: number;
+  onNavigate: (id: string) => void;
+}
+
+function LandingView({ summary, leadCount, onNavigate }: LandingViewProps): JSX.Element {
+  const urgentCount = summary.active; // approximate; real count can come from leads array
+
+  return (
+    <div style={{ padding: "24px 24px", maxWidth: 820, margin: "0 auto" }}>
+      {/* Quick Stats Row */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+        {SUMMARY_ITEMS.map((item) => (
+          <div
+            key={item.label}
+            style={{
+              flex: 1,
+              padding: "12px 14px",
+              borderRadius: "var(--radius-lg)",
+              background: `${item.color}10`,
+              border: `1px solid ${item.color}25`,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: item.color, display: "inline-block", flexShrink: 0 }} />
+              <span style={{ fontSize: 20, fontWeight: 800, color: item.color, fontFamily: "var(--font-primary)" }}>
+                {item.getCount(summary)}
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-primary)", marginTop: 2 }}>
+              {item.label}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 4 Card Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        {LANDING_CARDS.map((card) => (
+          <div
+            key={card.id}
+            onClick={() => onNavigate(card.id)}
+            style={{
+              background: "var(--bg-card)",
+              borderRadius: "var(--radius-xl)",
+              padding: "24px 22px",
+              cursor: "pointer",
+              border: "1.5px solid var(--border-default)",
+              transition: "all var(--transition-normal)",
+              position: "relative",
+              overflow: "hidden",
+              minHeight: 130,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              boxShadow: "var(--shadow-sm)",
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget;
+              el.style.borderColor = `${card.accentColor}50`;
+              el.style.transform = "translateY(-2px)";
+              el.style.boxShadow = `0 6px 20px ${card.accentColor}12`;
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget;
+              el.style.borderColor = "";
+              el.style.transform = "none";
+              el.style.boxShadow = "var(--shadow-sm)";
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 28, marginBottom: 10 }}>{card.icon}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-primary)", marginBottom: 3 }}>
+                {card.title}
+              </div>
+              <div style={{ fontSize: 12.5, color: "var(--text-muted)", fontFamily: "var(--font-primary)", lineHeight: 1.5 }}>
+                {card.subtitle}
+              </div>
+            </div>
+
+            {/* Dynamic count badge for "View Leads" card */}
+            {card.id === "view" && (
+              <div style={{ marginTop: 12, display: "flex", gap: 6 }}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, padding: "3px 9px", borderRadius: "var(--radius-full)", background: "rgba(34,211,167,0.1)", color: "#22d3a7", fontFamily: "var(--font-primary)" }}>
+                  {summary.active} active
+                </span>
+                <span style={{ fontSize: 10.5, fontWeight: 700, padding: "3px 9px", borderRadius: "var(--radius-full)", background: "rgba(99,102,241,0.1)", color: "#6366f1", fontFamily: "var(--font-primary)" }}>
+                  {summary.new} new
+                </span>
+              </div>
+            )}
+
+            {/* Arrow */}
+            <div style={{ position: "absolute", bottom: 18, right: 18, color: card.accentColor, opacity: 0.35 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14" /><path d="M12 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   VIEW: View Leads — Grouped by Stage (Accordion)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Single lead row inside an accordion ── */
+function LeadRow({ lead, onClick }: { lead: LeadBrief; onClick: (id: string) => void }): JSX.Element {
+  const evStyle = EVENT_STYLE[lead.event_type] ?? DEFAULT_EVENT_STYLE;
+  const days = daysUntil(lead.event_date);
+  const urgent = isUrgent(lead.event_date);
+
+  return (
+    <div
+      onClick={() => onClick(lead.id)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "10px 14px",
+        cursor: "pointer",
+        borderBottom: "1px solid var(--border-light)",
+        borderLeft: `3px solid ${evStyle.border}`,
+        transition: "background var(--transition-fast)",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-primary)" }}>
+          {lead.name}
+        </div>
+        <div style={{ fontSize: 11.5, color: "var(--text-secondary)", fontFamily: "var(--font-primary)", marginTop: 1 }}>
+          {lead.branch}
+        </div>
+      </div>
+
+      <Badge color={evStyle.color} bg={evStyle.bg}>{lead.event_type}</Badge>
+
+      <div style={{ textAlign: "right", minWidth: 90 }}>
+        <div style={{ fontSize: 12, color: urgent ? "var(--danger)" : "var(--text-secondary)", fontWeight: urgent ? 700 : 400, fontFamily: "var(--font-primary)" }}>
+          {formatDate(lead.event_date)}
+        </div>
+        {urgent && days !== null && (
+          <span style={{ fontSize: 9.5, background: "var(--danger-bg)", color: "var(--danger)", padding: "1px 6px", borderRadius: "var(--radius-full)", fontWeight: 700 }}>
+            In {days}d
+          </span>
+        )}
+      </div>
+
+      <div style={{ fontSize: 12, color: "var(--text-secondary)", fontFamily: "var(--font-primary)", minWidth: 50, textAlign: "center" }}>
+        👥 {lead.guest_count}
+      </div>
+
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-primary)", minWidth: 80, textAlign: "right" }}>
+        {lead.budget}
+      </div>
+
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2">
+        <path d="M9 18l6-6-6-6" />
+      </svg>
+    </div>
+  );
+}
+
+/* ── Single stage accordion ── */
+interface StageAccordionProps {
+  stage: (typeof STAGES)[number];
+  leads: LeadBrief[];
+  expanded: boolean;
+  onToggle: () => void;
+  onSelectLead: (id: string) => void;
+  stepNumber: number;
+}
+
+function StageAccordion({ stage, leads, expanded, onToggle, onSelectLead, stepNumber }: StageAccordionProps): JSX.Element {
+  const count = leads.length;
+
+  return (
+    <div style={{
+      borderRadius: "var(--radius-lg)",
+      border: "1.5px solid var(--border-default)",
+      overflow: "hidden",
+      background: "var(--bg-card)",
+      marginBottom: 8,
+    }}>
+      {/* Header */}
+      <div
+        onClick={onToggle}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "10px 14px",
+          cursor: "pointer",
+          background: expanded ? `${stage.color}08` : "var(--bg-card)",
+          borderBottom: expanded && count > 0 ? "1px solid var(--border-default)" : "none",
+          transition: "background var(--transition-fast)",
+        }}
+        onMouseEnter={(e) => { if (!expanded) e.currentTarget.style.background = "var(--bg-hover)"; }}
+        onMouseLeave={(e) => { if (!expanded) e.currentTarget.style.background = "var(--bg-card)"; }}
+      >
+        <span style={{
+          width: 24,
+          height: 24,
+          borderRadius: "50%",
+          background: stage.color,
+          color: "#fff",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 11,
+          fontWeight: 800,
+          fontFamily: "var(--font-primary)",
+          flexShrink: 0,
+        }}>
+          {stepNumber}
+        </span>
+        <span style={{ fontSize: 15, flexShrink: 0 }}>{stage.icon}</span>
+        <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-primary)", flex: 1 }}>
+          {stage.label}
+        </span>
+        <span style={{
+          fontSize: 11,
+          fontWeight: 800,
+          background: count > 0 ? stage.color : "var(--text-muted)",
+          color: "#fff",
+          padding: "2px 9px",
+          borderRadius: "var(--radius-full)",
+          minWidth: 22,
+          textAlign: "center",
+          fontFamily: "var(--font-primary)",
+        }}>
+          {count}
+        </span>
+        <svg
+          width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="var(--text-muted)" strokeWidth="2.5" strokeLinecap="round"
+          style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform var(--transition-fast)" }}
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </div>
+
+      {/* Content */}
+      {expanded && count > 0 && (
+        <div>{leads.map((lead) => <LeadRow key={lead.id} lead={lead} onClick={onSelectLead} />)}</div>
+      )}
+      {expanded && count === 0 && (
+        <div style={{ padding: "18px 14px", textAlign: "center", color: "var(--text-muted)", fontSize: 12.5, fontFamily: "var(--font-primary)", fontStyle: "italic" }}>
+          No leads in this stage
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Full "View Leads" section ── */
+interface ViewLeadsProps {
+  leads: LeadBrief[];
+  filters: { search: string; branch: string; event_type: string; source: string };
+  branches: Branch[];
+  onSetFilter: (key: string, val: string) => void;
+  onClearFilters: () => void;
+  hasActiveFilters: boolean;
+  onSelectLead: (id: string) => Promise<void>;
+  onBack: () => void;
+}
+
+function ViewLeadsSection({
+  leads,
+  filters,
+  branches,
+  onSetFilter,
+  onClearFilters,
+  hasActiveFilters,
+  onSelectLead,
+  onBack,
+}: ViewLeadsProps): JSX.Element {
+  // Default: first 3 non-terminal stages expanded
+  const [expandedStages, setExpandedStages] = useState<Set<StageId>>(
+    () => new Set(STAGES.filter((s) => !TERMINAL_STAGES.includes(s.id)).slice(0, 3).map((s) => s.id))
+  );
+
+  const toggleStage = (id: StageId): void => {
+    setExpandedStages((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const expandAll = () => setExpandedStages(new Set(STAGES.map((s) => s.id)));
+  const collapseAll = () => setExpandedStages(new Set());
+
+  const selectStyle: React.CSSProperties = {
+    background: "var(--bg-input)",
+    border: "1px solid var(--border-default)",
+    borderRadius: 8,
+    color: "var(--text-secondary)",
+    fontSize: 12.5,
+    fontWeight: 400,
+    padding: "6px 10px",
+    outline: "none",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    minWidth: 110,
+  };
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+      <BackButton onClick={onBack} label="Back to Leads" />
+
+      {/* Header row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-primary)" }}>
+            All Leads
+          </h2>
+          <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", fontFamily: "var(--font-primary)", marginTop: 2 }}>
+            {leads.length} leads{hasActiveFilters ? " (filtered)" : ""}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button
+            onClick={expandAll}
+            style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "4px 8px" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
+          >
+            Expand All
+          </button>
+          <button
+            onClick={collapseAll}
+            style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "4px 8px" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
+          >
+            Collapse All
+          </button>
+        </div>
+      </div>
+
+      {/* Filter bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 7,
+          background: "var(--bg-input)", border: "1px solid var(--border-default)",
+          borderRadius: 8, padding: "6px 12px", flex: "0 1 240px", minWidth: 160,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search name, phone..."
+            value={filters.search}
+            onChange={(e) => onSetFilter("search", e.target.value)}
+            style={{ border: "none", background: "transparent", outline: "none", fontSize: 12.5, color: "var(--text-primary)", width: "100%", fontFamily: "inherit" }}
+          />
+          {filters.search && (
+            <button
+              onClick={() => onSetFilter("search", "")}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0, display: "flex" }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {([
+          { key: "branch", placeholder: "All Branches", options: branches.map((b) => b.name) },
+          { key: "event_type", placeholder: "All Events", options: EVENT_TYPES as string[] },
+          { key: "source", placeholder: "All Sources", options: LEAD_SOURCES as string[] },
+        ] as const).map(({ key, placeholder, options }) => (
+          <select
+            key={key}
+            value={filters[key as keyof typeof filters]}
+            onChange={(e) => onSetFilter(key, e.target.value)}
+            style={{
+              ...selectStyle,
+              borderColor: filters[key as keyof typeof filters] ? "var(--accent)" : undefined,
+              color: filters[key as keyof typeof filters] ? "var(--accent)" : "var(--text-secondary)",
+              fontWeight: filters[key as keyof typeof filters] ? 600 : 400,
+            }}
+          >
+            <option value="">{placeholder}</option>
+            {options.map((o) => (
+              <option key={o} value={o} style={{ color: "var(--text-primary)", background: "var(--bg-card)" }}>{o}</option>
+            ))}
+          </select>
+        ))}
+
+        {hasActiveFilters && (
+          <button
+            onClick={onClearFilters}
+            style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "4px 2px" }}
+          >
+            Clear all
+          </button>
+        )}
+      </div>
+
+      {/* Stage Accordions */}
+      {STAGES.map((stage, idx) => {
+        const stageLeads = leads.filter((l) => l.stage === stage.id);
+        return (
+          <StageAccordion
+            key={stage.id}
+            stage={stage}
+            leads={stageLeads}
+            expanded={expandedStages.has(stage.id)}
+            onToggle={() => toggleStage(stage.id)}
+            onSelectLead={onSelectLead}
+            stepNumber={idx + 1}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   VIEW: View Specific Client — Search + Full Page Journey
+   ═══════════════════════════════════════════════════════════ */
+interface ClientSearchProps {
+  leads: LeadBrief[];
+  onSelectLead: (id: string) => Promise<void>;
+  selectedLead: LeadFull | null;
+  detailLoading: boolean;
+  onCloseDetail: () => void;
+  onUpdateFields: (id: string, data: LeadUpdateInput) => Promise<void>;
+  onMoveStage: (id: string, stage: StageId) => Promise<void>;
+  onSetHall: (id: string, hallId: string) => Promise<void>;
+  onUpdateMenu: (id: string, items: MenuItemInput[]) => Promise<void>;
+  onAddRemark: (id: string, text: string, author: string) => Promise<void>;
+  onUpdateAddOns: (id: string, addOns: AddOnInput[]) => Promise<void>;
+  contractors: Contractor[];
+  catalog: CatalogItem[];
+  onBack: () => void;
+}
+
+function ClientSearchView({
+  leads,
+  onSelectLead,
+  selectedLead,
+  detailLoading,
+  onCloseDetail,
+  onUpdateFields,
+  onMoveStage,
+  onSetHall,
+  onUpdateMenu,
+  onAddRemark,
+  onUpdateAddOns,
+  contractors,
+  catalog,
+  onBack,
+}: ClientSearchProps): JSX.Element {
+  const [search, setSearch] = useState("");
+
+  const results = search.length >= 2
+    ? leads.filter(
+        (l) =>
+          l.name.toLowerCase().includes(search.toLowerCase()) ||
+          (l.phone && l.phone.includes(search))
+      )
+    : [];
+
+  /* ── If a lead is selected, show full-page detail ── */
+  if (selectedLead) {
+    return (
+      <ClientFullPage
+        lead={selectedLead}
+        onBack={onCloseDetail}
+        onUpdateFields={onUpdateFields}
+        onMoveStage={onMoveStage}
+        onSetHall={onSetHall}
+        onUpdateMenu={onUpdateMenu}
+        onAddRemark={onAddRemark}
+        onUpdateAddOns={onUpdateAddOns}
+        contractors={contractors}
+        catalog={catalog}
+      />
+    );
+  }
+
+  if (detailLoading) {
+    return (
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 14, fontFamily: "var(--font-primary)" }}>
+        Loading client details…
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+      <BackButton onClick={onBack} label="Back to Leads" />
+
+      <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-primary)" }}>
+        Find a Client
+      </h2>
+      <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", fontFamily: "var(--font-primary)", marginTop: 2, marginBottom: 16 }}>
+        Search by name or phone number to view their complete journey.
+      </p>
+
+      {/* Search */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 7,
+        background: "var(--bg-input)", border: "1.5px solid var(--border-default)",
+        borderRadius: "var(--radius-md)", padding: "8px 14px", maxWidth: 420,
+      }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Type client name or phone..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          autoFocus
+          style={{ border: "none", background: "transparent", outline: "none", fontSize: 13, color: "var(--text-primary)", width: "100%", fontFamily: "inherit" }}
+        />
+      </div>
+
+      {/* Results */}
+      {search.length >= 2 && (
+        <div style={{ marginTop: 14 }}>
+          {results.length === 0 ? (
+            <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--text-muted)", fontSize: 13, fontFamily: "var(--font-primary)", border: "2px dashed var(--border-default)", borderRadius: "var(--radius-lg)" }}>
+              No clients found for "{search}"
+            </div>
+          ) : (
+            <div style={{ borderRadius: "var(--radius-lg)", border: "1.5px solid var(--border-default)", overflow: "hidden" }}>
+              {results.map((lead, i) => {
+                const stage = STAGES.find((s) => s.id === lead.stage);
+                const evStyle = EVENT_STYLE[lead.event_type] ?? DEFAULT_EVENT_STYLE;
+                return (
+                  <div
+                    key={lead.id}
+                    onClick={() => onSelectLead(lead.id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "12px 16px",
+                      cursor: "pointer",
+                      background: "var(--bg-card)",
+                      borderTop: i > 0 ? "1px solid var(--border-light)" : "none",
+                      transition: "background var(--transition-fast)",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-card)"; }}
+                  >
+                    <div style={{
+                      width: 36, height: 36, borderRadius: "50%",
+                      background: `${stage?.color ?? "#94a3b8"}15`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 16, flexShrink: 0,
+                    }}>
+                      {stage?.icon}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-primary)" }}>{lead.name}</div>
+                      <div style={{ fontSize: 11.5, color: "var(--text-secondary)", fontFamily: "var(--font-primary)" }}>{lead.branch}</div>
+                    </div>
+                    <Badge color={evStyle.color} bg={evStyle.bg}>{lead.event_type}</Badge>
+                    <Badge color={stage?.color ?? "#94a3b8"} bg={`${stage?.color ?? "#94a3b8"}20`}>{stage?.label}</Badge>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   CLIENT FULL PAGE — Dedicated screen with timeline journey
+   ═══════════════════════════════════════════════════════════ */
+interface ClientFullPageProps {
+  lead: LeadFull;
+  onBack: () => void;
+  onUpdateFields: (id: string, data: LeadUpdateInput) => Promise<void>;
+  onMoveStage: (id: string, stage: StageId) => Promise<void>;
+  onSetHall: (id: string, hallId: string) => Promise<void>;
+  onUpdateMenu: (id: string, items: MenuItemInput[]) => Promise<void>;
+  onAddRemark: (id: string, text: string, author: string) => Promise<void>;
+  onUpdateAddOns: (id: string, addOns: AddOnInput[]) => Promise<void>;
+  contractors: Contractor[];
+  catalog: CatalogItem[];
+}
+
+function ClientFullPage({
+  lead,
+  onBack,
+  onUpdateFields,
+  onMoveStage,
+  onSetHall,
+  onUpdateMenu,
+  onAddRemark,
+  onUpdateAddOns,
+  contractors,
+  catalog,
+}: ClientFullPageProps): JSX.Element {
+  const currentStage = STAGES.find((s) => s.id === lead.stage);
+  const stageIdx = STAGES.findIndex((s) => s.id === lead.stage);
+  const evStyle = EVENT_STYLE[lead.event_type] ?? DEFAULT_EVENT_STYLE;
+  const isTerminal = TERMINAL_STAGES.includes(lead.stage);
+  const canFwd = stageIdx < STAGES.length - 1 && !isTerminal;
+  const canBack = stageIdx > 0 && !isTerminal;
+
+  const timelineStages = STAGES.filter((s) => !TERMINAL_STAGES.includes(s.id));
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", fontFamily: "var(--font-primary)" }}>
+      <BackButton onClick={onBack} label="Back to Search" />
+
+      {/* Client Header Card */}
+      <div style={{
+        background: "var(--bg-card)",
+        borderRadius: "var(--radius-xl)",
+        padding: "20px 22px",
+        border: "1.5px solid var(--border-default)",
+        marginBottom: 18,
+        position: "relative",
+        overflow: "hidden",
+        boxShadow: "var(--shadow-sm)",
+      }}>
+        {/* Top accent bar */}
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${evStyle.border}, ${currentStage?.color ?? "var(--accent)"})` }} />
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>{lead.name}</h1>
+            <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 3 }}>
+              {lead.phone} · {lead.email}
+            </div>
+            <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+              <Badge color={currentStage?.color ?? "#666"} bg={`${currentStage?.color ?? "#666"}20`}>
+                {currentStage?.icon} {currentStage?.label}
+              </Badge>
+              <Badge color={evStyle.color} bg={evStyle.bg}>{lead.event_type}</Badge>
+              {isUrgent(lead.event_date) && (
+                <Badge color="var(--danger)" bg="var(--danger-bg)">
+                  {daysUntil(lead.event_date) === 0 ? "Today!" : `${daysUntil(lead.event_date)}d away`}
+                </Badge>
+              )}
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 10.5, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.5 }}>Event Date</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)" }}>{formatDate(lead.event_date)}</div>
+          </div>
+        </div>
+
+        {/* Stage actions */}
+        {(canBack || canFwd) && (
+          <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+            {canBack && (
+              <Button variant="secondary" onClick={() => onMoveStage(lead.id, STAGES[stageIdx - 1].id)} style={{ fontSize: 12 }}>
+                ← {STAGES[stageIdx - 1].label}
+              </Button>
+            )}
+            {canFwd && (
+              <Button variant="primary" onClick={() => onMoveStage(lead.id, STAGES[stageIdx + 1].id)} style={{ fontSize: 12 }}>
+                {STAGES[stageIdx + 1].label} →
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Two Column: Details + Booking Info */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
+        <div style={{ background: "var(--bg-card)", borderRadius: "var(--radius-lg)", padding: "16px 18px", border: "1px solid var(--border-default)" }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>
+            Event Details
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <InfoRow label="Event Type" value={lead.event_type} />
+            <InfoRow label="Guest Count" value={`${lead.guest_count} guests`} />
+            <InfoRow label="Budget" value={lead.budget} />
+            <InfoRow label="Event Date" value={formatDate(lead.event_date)} highlight={isUrgent(lead.event_date)} />
+          </div>
+        </div>
+        <div style={{ background: "var(--bg-card)", borderRadius: "var(--radius-lg)", padding: "16px 18px", border: "1px solid var(--border-default)" }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>
+            Booking Info
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <InfoRow label="Branch" value={lead.branch} />
+            <InfoRow label="Source" value={lead.source} />
+            <InfoRow label="Assigned To" value={lead.assigned_to} />
+            <InfoRow label="Next Follow-up" value={formatDate(lead.next_follow_up)} />
+          </div>
+        </div>
+      </div>
+
+      {/* Journey Timeline */}
+      <div style={{
+        background: "var(--bg-card)",
+        borderRadius: "var(--radius-xl)",
+        padding: "20px 22px",
+        border: "1px solid var(--border-default)",
+        marginBottom: 18,
+      }}>
+        <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 16 }}>
+          Client Journey
+        </div>
+
+        <div style={{ position: "relative", paddingLeft: 36 }}>
+          {/* Vertical line */}
+          <div style={{ position: "absolute", left: 13, top: 4, bottom: 4, width: 2, background: "var(--border-default)" }} />
+
+          {timelineStages.map((stage, i) => {
+            const isCompleted = i < stageIdx;
+            const isCurrent = stage.id === lead.stage;
+            const isTerminalLead = TERMINAL_STAGES.includes(lead.stage);
+
+            let dotBg = "var(--bg-card)";
+            let dotBorder = "var(--border-default)";
+            let textColor = "var(--text-muted)";
+
+            if (isCompleted || (isTerminalLead && i <= stageIdx)) {
+              dotBg = stage.color;
+              dotBorder = stage.color;
+              textColor = "var(--text-primary)";
+            } else if (isCurrent) {
+              dotBg = stage.color;
+              dotBorder = stage.color;
+              textColor = "var(--text-primary)";
+            }
+
+            return (
+              <div
+                key={stage.id}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 14,
+                  marginBottom: i < timelineStages.length - 1 ? 4 : 0,
+                  padding: isCurrent ? "10px 14px" : "6px 0",
+                  background: isCurrent ? `${stage.color}08` : "transparent",
+                  borderRadius: isCurrent ? "var(--radius-md)" : 0,
+                  border: isCurrent ? `1px solid ${stage.color}25` : "none",
+                  position: "relative",
+                }}
+              >
+                {/* Dot */}
+                <div style={{
+                  position: "absolute",
+                  left: -23,
+                  top: isCurrent ? 14 : 8,
+                  width: isCurrent ? 12 : 10,
+                  height: isCurrent ? 12 : 10,
+                  borderRadius: "50%",
+                  background: (isCompleted || isCurrent) ? dotBg : "var(--bg-card)",
+                  border: `2.5px solid ${dotBorder}`,
+                  zIndex: 1,
+                  marginLeft: isCurrent ? -1 : 0,
+                  boxShadow: isCurrent ? `0 0 0 4px ${stage.color}20` : "none",
+                }} />
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <span style={{ fontSize: 14 }}>{stage.icon}</span>
+                    <span style={{
+                      fontSize: 13,
+                      fontWeight: isCurrent ? 800 : isCompleted ? 600 : 400,
+                      color: textColor,
+                      fontFamily: "var(--font-primary)",
+                    }}>
+                      {stage.label}
+                    </span>
+                    {isCompleted && (
+                      <span style={{ fontSize: 10, color: stage.color, fontWeight: 700, fontFamily: "var(--font-primary)" }}>✓ Done</span>
+                    )}
+                    {isCurrent && (
+                      <Badge color={stage.color} bg={`${stage.color}20`}>Current</Badge>
+                    )}
+                  </div>
+                  {isCurrent && (
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>
+                      This lead is currently at this stage. Use the buttons above to advance.
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Terminal status */}
+          {TERMINAL_STAGES.includes(lead.stage) && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 12, marginTop: 6,
+              padding: "10px 14px",
+              background: lead.stage === "converted" ? "var(--success-bg)" : "var(--danger-bg)",
+              borderRadius: "var(--radius-md)",
+              position: "relative",
+            }}>
+              <div style={{
+                position: "absolute", left: -23, top: 12,
+                width: 12, height: 12, borderRadius: "50%",
+                background: lead.stage === "converted" ? "var(--success)" : "var(--danger)",
+                border: "2.5px solid transparent", zIndex: 1, marginLeft: -1,
+              }} />
+              <span style={{ fontSize: 16 }}>{lead.stage === "converted" ? "🎉" : "❌"}</span>
+              <span style={{
+                fontSize: 13, fontWeight: 800,
+                color: lead.stage === "converted" ? "var(--success)" : "var(--danger)",
+                fontFamily: "var(--font-primary)",
+              }}>
+                {lead.stage === "converted" ? "Converted — Booking Confirmed!" : "Lost — Lead did not convert"}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Convert / Lost footer actions */}
+      {!isTerminal && (
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", paddingBottom: 20 }}>
+          <Button variant="success" onClick={() => onMoveStage(lead.id, "converted")} style={{ padding: "10px 24px" }}>
+            ✓ Convert
+          </Button>
+          <Button variant="danger" onClick={() => onMoveStage(lead.id, "lost")} style={{ padding: "10px 24px" }}>
+            ✗ Mark Lost
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ═══════════════════════════════════════════════════════════
    Lead Generation Tab Content
@@ -429,256 +1250,237 @@ function LeadGenerationSection({ branches }: LeadGenerationSectionProps): JSX.El
     );
 }
 
-
 /* ═══════════════════════════════════════════════════════════
-   Main Page
+   MAIN PAGE
    ═══════════════════════════════════════════════════════════ */
 export default function LeadPipelinePage(): JSX.Element {
-    const {
-        leads,
-        filters,
-        setFilters,
-        summary,
-        hasActiveFilters,
-        listLoading,
-        selectedLead,
-        detailLoading,
-        selectLead,
-        closeDetail,
-        createLead,
-        updateFields,
-        moveStage,
-        setHall,
-        updateMenu,
-        addRemark,
-        updateAddOns,
-        importCSV,
-    } = useLeads();
+  const {
+    leads,
+    filters,
+    setFilters,
+    summary,
+    hasActiveFilters,
+    listLoading,
+    selectedLead,
+    detailLoading,
+    selectLead,
+    closeDetail,
+    createLead,
+    updateFields,
+    moveStage,
+    setHall,
+    updateMenu,
+    addRemark,
+    updateAddOns,
+    importCSV,
+  } = useLeads();
 
-    const { branches, contractors, catalog, loading: refLoading } = useReferenceData();
+  const { branches, contractors, catalog, loading: refLoading } = useReferenceData();
 
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [showCSVModal, setShowCSVModal] = useState(false);
-    const [activeTab, setActiveTab] = useState<ActiveTab>("pipeline");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showCSVModal, setShowCSVModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<ActiveTab>("pipeline");
+  const [pipelineView, setPipelineView] = useState<PipelineView>("landing");
 
-    /* ─── Derive per-stage counts from leads array ─── */
-    const stageCounts = useMemo(() => {
-        const counts: Record<string, number> = {};
-        for (const lead of leads) {
-            counts[lead.stage] = (counts[lead.stage] || 0) + 1;
-        }
-        return counts;
-    }, [leads]);
+  /* ─── Filter helpers ─── */
+  const setFilter = (key: string, val: string) =>
+    setFilters({ ...filters, [key]: val });
 
-    /* ─── Helper: update one filter key ─── */
-    const setFilter = (key: keyof typeof filters, val: string) =>
-        setFilters({ ...filters, [key]: val });
+  const clearFilters = () =>
+    setFilters({ search: "", branch: "", event_type: "", source: "" });
 
-    const clearFilters = () =>
-        setFilters({ search: "", branch: "", event_type: "", source: "" });
+  /* ─── Landing card navigation ─── */
+  const handleLandingNavigate = (id: string): void => {
+    if (id === "add") setShowAddModal(true);
+    else if (id === "import") setShowCSVModal(true);
+    else if (id === "view") setPipelineView("viewLeads");
+    else if (id === "client") setPipelineView("viewClient");
+  };
 
-    const activeFilterCount = [filters.branch, filters.event_type, filters.source].filter(Boolean).length;
-
-    /* ─── Loading state ─── */
-    if (refLoading) {
-        return (
-            <div
-                style={{
-                    height: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontFamily: "var(--font-primary)",
-                    color: "var(--text-muted)",
-                    fontSize: 14,
-                    background: "var(--bg-app)",
-                }}
-            >
-                Loading…
-            </div>
-        );
-    }
-
-    /* ─── Tab button style helper ─── */
-    const tabStyle = (tab: ActiveTab): React.CSSProperties => ({
-        padding: "8px 20px",
-        fontSize: 13,
-        fontWeight: activeTab === tab ? 700 : 500,
-        color: activeTab === tab ? "var(--accent)" : "var(--text-secondary)",
-        background: activeTab === tab ? "var(--accent-bg)" : "transparent",
-        border: activeTab === tab ? "1.5px solid var(--accent)" : "1.5px solid transparent",
-        borderRadius: 8,
-        cursor: "pointer",
-        transition: "all 150ms ease",
-        fontFamily: "inherit",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-    });
-
+  /* ─── Loading state ─── */
+  if (refLoading) {
     return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-                overflow: "hidden",
-                background: "var(--bg-app)",
-                fontFamily: "var(--font-primary)",
-            }}
-        >
-            {/* ══════════════════════════════════════════
-                 Page Header
-                 ══════════════════════════════════════════ */}
-            <div
-                style={{
-                    padding: "16px 20px 12px",
-                    borderBottom: "1px solid var(--border-default)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    flexShrink: 0,
-                    gap: 12,
-                    flexWrap: "wrap",
-                }}
-            >
-                {/* Title + tabs */}
-                <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-                    <div>
-                        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-primary)", letterSpacing: -0.3 }}>
-                            Leads
-                        </h1>
-                        <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                            {activeTab === "pipeline"
-                                ? `${leads.length} leads${hasActiveFilters ? " (filtered)" : ""}`
-                                : "Manage partner referral sources"}
-                        </p>
-                    </div>
-
-                    {/* ── Tab switcher ── */}
-                    <div style={{ display: "flex", gap: 4, background: "var(--bg-section)", padding: 3, borderRadius: 10, border: "1px solid var(--border-default)" }}>
-                        <button onClick={() => setActiveTab("pipeline")} style={tabStyle("pipeline")}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
-                            Lead Pipeline
-                        </button>
-                        <button onClick={() => setActiveTab("generation")} style={tabStyle("generation")}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-                            Lead Generation
-                        </button>
-                    </div>
-                </div>
-
-                {/* Summary pills (pipeline tab only) */}
-                {activeTab === "pipeline" && (
-                    <div style={{ display: "flex", gap: 6 }}>
-                        {SUMMARY_ITEMS.map((item) => (
-                            <div key={item.label} style={{ padding: "5px 12px", borderRadius: 8, background: `${item.color}18`, border: `1px solid ${item.color}30`, display: "flex", alignItems: "center", gap: 5 }}>
-                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: item.color, display: "inline-block", flexShrink: 0 }} />
-                                <span style={{ fontSize: 13, fontWeight: 700, color: item.color }}>{item.getCount(summary)}</span>
-                                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{item.label}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Action buttons (pipeline tab only) */}
-                {activeTab === "pipeline" && (
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <button
-                            onClick={() => setShowCSVModal(true)}
-                            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600, background: "var(--bg-card)", color: "var(--text-secondary)", border: "1px solid var(--border-default)", cursor: "pointer", transition: "all 150ms ease", fontFamily: "inherit" }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-primary)"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-card)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
-                        >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="M17 8l-5-5-5 5" /><path d="M12 3v12" />
-                            </svg>
-                            Import CSV
-                        </button>
-                        {/* ── BIGGER Add Lead button ── */}
-                        <button
-                            onClick={() => setShowAddModal(true)}
-                            style={{
-                                display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 24px", borderRadius: 10,
-                                fontSize: 14, fontWeight: 700, background: "var(--accent)", color: "#0f1623", border: "none",
-                                cursor: "pointer", transition: "all 150ms ease", boxShadow: "0 3px 14px rgba(34,211,167,0.3)", fontFamily: "inherit",
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-hover)"; e.currentTarget.style.boxShadow = "0 4px 18px rgba(34,211,167,0.4)"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent)"; e.currentTarget.style.boxShadow = "0 3px 14px rgba(34,211,167,0.3)"; }}
-                        >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M12 5v14M5 12h14" />
-                            </svg>
-                            Add Lead
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* ══════════════════════════════════════════
-                 Filter Bar (pipeline tab only)
-                 ══════════════════════════════════════════ */}
-            {activeTab === "pipeline" && (
-                <div style={{ padding: "8px 20px", borderBottom: "1px solid var(--border-default)", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 7, background: "var(--bg-input)", border: "1px solid var(--border-default)", borderRadius: 8, padding: "6px 12px", flex: "0 1 240px", minWidth: 160 }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
-                        </svg>
-                        <input type="text" placeholder="Search name, phone..." value={filters.search} onChange={(e) => setFilter("search", e.target.value)}
-                            style={{ border: "none", background: "transparent", outline: "none", fontSize: 12.5, color: "var(--text-primary)", width: "100%", fontFamily: "inherit" }} />
-                        {filters.search && (
-                            <button onClick={() => setFilter("search", "")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0, display: "flex" }}>
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-                            </button>
-                        )}
-                    </div>
-
-                    {([
-                        { key: "branch" as const, placeholder: "All Branches", options: branches.map((b) => b.name) },
-                        { key: "event_type" as const, placeholder: "All Events", options: EVENT_TYPES as string[] },
-                        { key: "source" as const, placeholder: "All Sources", options: LEAD_SOURCES as string[] },
-                    ] as const).map(({ key, placeholder, options }) => (
-                        <select key={key} value={filters[key]} onChange={(e) => setFilter(key, e.target.value)}
-                            style={{ background: "var(--bg-input)", border: `1px solid ${filters[key] ? "var(--accent)" : "var(--border-default)"}`, borderRadius: 8, color: filters[key] ? "var(--accent)" : "var(--text-secondary)", fontSize: 12.5, fontWeight: filters[key] ? 600 : 400, padding: "6px 10px", outline: "none", cursor: "pointer", fontFamily: "inherit", minWidth: 110 }}>
-                            <option value="">{placeholder}</option>
-                            {options.map((o) => (<option key={o} value={o} style={{ color: "var(--text-primary)", background: "var(--bg-card)" }}>{o}</option>))}
-                        </select>
-                    ))}
-
-                    {activeFilterCount > 0 && (
-                        <button onClick={clearFilters} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "4px 2px" }}>Clear all</button>
-                    )}
-
-                    <div style={{ marginLeft: "auto", display: "flex", gap: 5, alignItems: "center" }}>
-                        {STAGES.slice(0, 7).map((s) => {
-                            const count = stageCounts[s.id] ?? 0;
-                            return count > 0 ? (
-                                <span key={s.id} style={{ fontSize: 10.5, fontWeight: 600, padding: "3px 9px", borderRadius: 20, background: `${s.color}18`, color: s.color, border: `1px solid ${s.color}30`, whiteSpace: "nowrap" }}>
-                                    {s.icon} {s.label.split(" ")[0]} · {count}
-                                </span>
-                            ) : null;
-                        })}
-                    </div>
-                </div>
-            )}
-
-            {/* ══════════════════════════════════════════
-                 Tab Content
-                 ══════════════════════════════════════════ */}
-            <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-                {activeTab === "pipeline" ? (
-                    listLoading && leads.length === 0 ? (
-                        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 14 }}>Loading leads…</div>
-                    ) : (
-                        <KanbanBoard leads={leads} selectedLead={selectedLead} detailLoading={detailLoading} onSelectLead={selectLead} onCloseDetail={closeDetail} onUpdateFields={updateFields} onMoveStage={moveStage} onSetHall={setHall} onUpdateMenu={updateMenu} onAddRemark={addRemark} onUpdateAddOns={updateAddOns} contractors={contractors} catalog={catalog} />
-                    )
-                ) : (
-                    <LeadGenerationSection branches={branches} />
-                )}
-            </div>
-
-            {showAddModal && (<AddLeadModal branches={branches} onClose={() => setShowAddModal(false)} onAdd={async (data) => { await createLead(data); setShowAddModal(false); }} />)}
-            {showCSVModal && (<CSVImportModal onClose={() => setShowCSVModal(false)} onImport={importCSV} />)}
-        </div>
+      <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-primary)", color: "var(--text-muted)", fontSize: 14, background: "var(--bg-app)" }}>
+        Loading…
+      </div>
     );
+  }
+
+  /* ─── Tab button style helper ─── */
+  const tabStyle = (tab: ActiveTab): React.CSSProperties => ({
+    padding: "8px 20px",
+    fontSize: 13,
+    fontWeight: activeTab === tab ? 700 : 500,
+    color: activeTab === tab ? "var(--accent)" : "var(--text-secondary)",
+    background: activeTab === tab ? "var(--accent-bg)" : "transparent",
+    border: activeTab === tab ? "1.5px solid var(--accent)" : "1.5px solid transparent",
+    borderRadius: 8,
+    cursor: "pointer",
+    transition: "all 150ms ease",
+    fontFamily: "inherit",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+  });
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", background: "var(--bg-app)", fontFamily: "var(--font-primary)" }}>
+
+      {/* ══════════════════════════════════════════
+           Page Header
+           ══════════════════════════════════════════ */}
+      <div style={{
+        padding: "16px 20px 12px",
+        borderBottom: "1px solid var(--border-default)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexShrink: 0,
+        gap: 12,
+        flexWrap: "wrap",
+      }}>
+        {/* Title + tabs */}
+        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-primary)", letterSpacing: -0.3 }}>
+              Leads
+            </h1>
+            <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+              {activeTab === "pipeline"
+                ? `${leads.length} leads${hasActiveFilters ? " (filtered)" : ""}`
+                : "Manage partner referral sources"}
+            </p>
+          </div>
+
+          {/* Tab switcher */}
+          <div style={{ display: "flex", gap: 4, background: "var(--bg-section)", padding: 3, borderRadius: 10, border: "1px solid var(--border-default)" }}>
+            <button onClick={() => { setActiveTab("pipeline"); setPipelineView("landing"); }} style={tabStyle("pipeline")}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+              </svg>
+              Lead Pipeline
+            </button>
+            <button onClick={() => setActiveTab("generation")} style={tabStyle("generation")}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              Lead Generation
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════
+           Tab Content
+           ══════════════════════════════════════════ */}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        {activeTab === "pipeline" ? (
+          listLoading && leads.length === 0 ? (
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 14 }}>
+              Loading leads…
+            </div>
+          ) : (
+            <>
+              {/* ── Landing ── */}
+              {pipelineView === "landing" && (
+                <div style={{ flex: 1, overflowY: "auto" }}>
+                  <LandingView
+                    summary={summary}
+                    leadCount={leads.length}
+                    onNavigate={handleLandingNavigate}
+                  />
+                </div>
+              )}
+
+              {/* ── View Leads (Accordion) ── */}
+              {pipelineView === "viewLeads" && (
+                <>
+                  <ViewLeadsSection
+                    leads={leads}
+                    filters={filters}
+                    branches={branches}
+                    onSetFilter={setFilter}
+                    onClearFilters={clearFilters}
+                    hasActiveFilters={hasActiveFilters}
+                    onSelectLead={selectLead}
+                    onBack={() => setPipelineView("landing")}
+                  />
+
+                  {/* Side panel overlay for "View Leads" */}
+                  {selectedLead && (
+                    <>
+                      <div
+                        className="animate-fade-in"
+                        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 150 }}
+                        onClick={closeDetail}
+                      />
+                      <LeadDetailPanel
+                        lead={selectedLead}
+                        onClose={closeDetail}
+                        onUpdateFields={updateFields}
+                        onMoveStage={moveStage}
+                        onSetHall={setHall}
+                        onUpdateMenu={updateMenu}
+                        onAddRemark={addRemark}
+                        onUpdateAddOns={updateAddOns}
+                        contractors={contractors}
+                        catalog={catalog}
+                      />
+                    </>
+                  )}
+
+                  {/* Loading indicator for detail */}
+                  {detailLoading && !selectedLead && (
+                    <div style={{ position: "fixed", top: 0, right: 0, width: 480, height: "100vh", background: "var(--bg-section)", boxShadow: "var(--shadow-panel)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ fontSize: 14, color: "var(--text-muted)", fontFamily: "var(--font-primary)" }}>Loading…</div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* ── View Specific Client (Full Page) ── */}
+              {pipelineView === "viewClient" && (
+                <ClientSearchView
+                  leads={leads}
+                  onSelectLead={selectLead}
+                  selectedLead={selectedLead}
+                  detailLoading={detailLoading}
+                  onCloseDetail={closeDetail}
+                  onUpdateFields={updateFields}
+                  onMoveStage={moveStage}
+                  onSetHall={setHall}
+                  onUpdateMenu={updateMenu}
+                  onAddRemark={addRemark}
+                  onUpdateAddOns={updateAddOns}
+                  contractors={contractors}
+                  catalog={catalog}
+                  onBack={() => { closeDetail(); setPipelineView("landing"); }}
+                />
+              )}
+            </>
+          )
+        ) : (
+          // Lead Generation tab — keep original LeadGenerationSection here
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: 14 }}>
+            <LeadGenerationSection branches={branches} />
+          </div>
+        )}
+      </div>
+
+      {/* ── Modals ── */}
+      {showAddModal && (
+        <AddLeadModal
+          branches={branches}
+          onClose={() => setShowAddModal(false)}
+          onAdd={async (data) => { await createLead(data); setShowAddModal(false); }}
+        />
+      )}
+      {showCSVModal && (
+        <CSVImportModal
+          onClose={() => setShowCSVModal(false)}
+          onImport={importCSV}
+        />
+      )}
+    </div>
+  );
 }
