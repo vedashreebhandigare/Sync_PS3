@@ -1,10 +1,11 @@
-import type { AddOn } from "../../types";
+import { useState } from "react";
+import type { AddOn, AddOnInput } from "../../types";
 import { Button, SectionLabel, PlusIcon, TrashIcon } from "../ui";
-import { currency, generateId } from "../../utils";
+import { currency } from "../../utils";
 
 interface PostEventAddOnsProps {
   addOns: AddOn[];
-  onUpdate: (addOns: AddOn[]) => void;
+  onSave: (addOns: AddOnInput[]) => void;
 }
 
 const inputStyle: React.CSSProperties = {
@@ -18,18 +19,23 @@ const inputStyle: React.CSSProperties = {
 
 export default function PostEventAddOns({
   addOns,
-  onUpdate,
+  onSave,
 }: PostEventAddOnsProps): JSX.Element {
-  const addItem = (): void => {
-    onUpdate([...addOns, { id: generateId(), desc: "", cost: 0 }]);
-  };
+  const [newDesc, setNewDesc] = useState("");
+  const [newCost, setNewCost] = useState("");
 
-  const updateItem = (id: string, field: keyof AddOn, value: string | number): void => {
-    onUpdate(addOns.map((a) => (a.id === id ? { ...a, [field]: value } : a)));
+  const toInputs = (items: AddOn[]): AddOnInput[] =>
+    items.map((a) => ({ desc: a.desc, cost: a.cost }));
+
+  const addItem = (): void => {
+    if (!newDesc) return;
+    onSave([...toInputs(addOns), { desc: newDesc, cost: Number(newCost) || 0 }]);
+    setNewDesc("");
+    setNewCost("");
   };
 
   const removeItem = (id: string): void => {
-    onUpdate(addOns.filter((a) => a.id !== id));
+    onSave(toInputs(addOns.filter((a) => a.id !== id)));
   };
 
   const total = addOns.reduce((sum, a) => sum + (a.cost || 0), 0);
@@ -39,68 +45,25 @@ export default function PostEventAddOns({
       <SectionLabel>Post-Event Add-ons / Additional Costs</SectionLabel>
 
       {addOns.map((addon) => (
-        <div
-          key={addon.id}
-          style={{
-            display: "flex",
-            gap: 6,
-            marginBottom: 6,
-            alignItems: "center",
-          }}
-        >
-          <input
-            placeholder="Description"
-            value={addon.desc}
-            onChange={(e) => updateItem(addon.id, "desc", e.target.value)}
-            style={{ ...inputStyle, flex: 1 }}
-          />
-          <input
-            type="number"
-            placeholder="₹ Cost"
-            value={addon.cost || ""}
-            onChange={(e) =>
-              updateItem(addon.id, "cost", Number(e.target.value))
-            }
-            style={{ ...inputStyle, width: 90 }}
-          />
-          <button
-            onClick={() => removeItem(addon.id)}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--danger)",
-              display: "flex",
-            }}
-          >
+        <div key={addon.id} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center", padding: "6px 8px", background: "#fff", borderRadius: "var(--radius-md)", border: "1px solid var(--border-light)" }}>
+          <span style={{ flex: 1, fontSize: 12.5, fontFamily: "var(--font-primary)" }}>{addon.desc}</span>
+          <span style={{ fontSize: 12.5, fontWeight: 600, fontFamily: "var(--font-primary)" }}>{currency(addon.cost)}</span>
+          <button onClick={() => removeItem(addon.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--danger)", display: "flex" }}>
             <TrashIcon />
           </button>
         </div>
       ))}
 
-      <Button
-        variant="secondary"
-        onClick={addItem}
-        style={{ fontSize: 12, marginTop: 4 }}
-      >
-        <PlusIcon size={14} /> Add Cost Item
-      </Button>
+      <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+        <input placeholder="Description" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+        <input type="number" placeholder="₹ Cost" value={newCost} onChange={(e) => setNewCost(e.target.value)} style={{ ...inputStyle, width: 90 }} />
+        <Button variant="secondary" onClick={addItem} style={{ fontSize: 12 }}>
+          <PlusIcon size={14} /> Add
+        </Button>
+      </div>
 
       {addOns.length > 0 && (
-        <div
-          style={{
-            marginTop: 10,
-            padding: "8px 10px",
-            background: "#fff",
-            borderRadius: "var(--radius-md)",
-            border: "1px solid var(--border-default)",
-            fontSize: 13,
-            fontWeight: 700,
-            color: "var(--text-primary)",
-            textAlign: "right",
-            fontFamily: "var(--font-primary)",
-          }}
-        >
+        <div style={{ marginTop: 10, padding: "8px 10px", background: "#fff", borderRadius: "var(--radius-md)", border: "1px solid var(--border-default)", fontSize: 13, fontWeight: 700, color: "var(--text-primary)", textAlign: "right", fontFamily: "var(--font-primary)" }}>
           Additional Total: {currency(total)}
         </div>
       )}

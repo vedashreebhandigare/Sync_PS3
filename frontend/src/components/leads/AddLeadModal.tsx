@@ -1,48 +1,26 @@
 import { useState } from "react";
-import type { NewLeadForm, EventType, LeadSource } from "../../types";
+import type { LeadCreateInput, EventType, LeadSource, Branch } from "../../types";
 import { Button, Modal } from "../ui";
-import { BRANCHES, EVENT_TYPES, LEAD_SOURCES } from "../../constants";
+import { EVENT_TYPES, LEAD_SOURCES } from "../../constants";
 
 interface AddLeadModalProps {
+  branches: Branch[];
   onClose: () => void;
-  onAdd: (form: NewLeadForm) => void;
+  onAdd: (data: LeadCreateInput) => void;
 }
 
-interface FieldConfig {
-  key: keyof NewLeadForm;
-  label: string;
-  type: "text" | "email" | "date" | "number" | "select";
-  required?: boolean;
-  placeholder?: string;
-  options?: string[];
-  fullWidth?: boolean;
+interface FormState {
+  name: string;
+  phone: string;
+  email: string;
+  event_type: EventType;
+  event_date: string;
+  guest_count: string;
+  budget: string;
+  branch: string;
+  source: LeadSource;
+  assigned_to: string;
 }
-
-const FIELDS: FieldConfig[] = [
-  { key: "name", label: "Full Name", type: "text", required: true, fullWidth: true },
-  { key: "phone", label: "Phone", type: "text", required: true },
-  { key: "email", label: "Email", type: "email" },
-  { key: "eventType", label: "Event Type", type: "select", options: EVENT_TYPES },
-  { key: "eventDate", label: "Event Date", type: "date" },
-  { key: "guestCount", label: "Guest Count", type: "number" },
-  { key: "budget", label: "Budget Range", type: "text", placeholder: "e.g. ₹5L - ₹8L" },
-  { key: "branch", label: "Branch", type: "select", options: BRANCHES },
-  { key: "source", label: "Source", type: "select", options: LEAD_SOURCES },
-  { key: "assignedTo", label: "Assigned To", type: "text" },
-];
-
-const INITIAL_FORM: NewLeadForm = {
-  name: "",
-  phone: "",
-  email: "",
-  eventType: EVENT_TYPES[0],
-  eventDate: "",
-  guestCount: "",
-  budget: "",
-  branch: BRANCHES[0],
-  source: LEAD_SOURCES[0],
-  assignedTo: "",
-};
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -65,78 +43,98 @@ const labelStyle: React.CSSProperties = {
 };
 
 export default function AddLeadModal({
+  branches,
   onClose,
   onAdd,
 }: AddLeadModalProps): JSX.Element {
-  const [form, setForm] = useState<NewLeadForm>(INITIAL_FORM);
+  const [form, setForm] = useState<FormState>({
+    name: "",
+    phone: "",
+    email: "",
+    event_type: EVENT_TYPES[0],
+    event_date: "",
+    guest_count: "",
+    budget: "",
+    branch: branches[0]?.id ?? "",
+    source: LEAD_SOURCES[0],
+    assigned_to: "",
+  });
 
-  const set = (key: keyof NewLeadForm, value: string): void => {
+  const set = (key: keyof FormState, value: string): void => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSubmit = (): void => {
-    if (!form.name || !form.phone) return;
-    onAdd(form);
+    if (!form.name || !form.event_type || !form.event_date || !form.branch) return;
+    const payload: LeadCreateInput = {
+      name: form.name,
+      phone: form.phone || undefined,
+      email: form.email || undefined,
+      event_type: form.event_type,
+      event_date: form.event_date,
+      guest_count: Number(form.guest_count) || undefined,
+      budget: form.budget || undefined,
+      branch: form.branch,
+      source: form.source,
+      assigned_to: form.assigned_to || undefined,
+    };
+    onAdd(payload);
     onClose();
   };
 
   return (
-    <Modal
-      title="Add New Lead"
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSubmit}>
-            Add Lead
-          </Button>
-        </>
-      }
-    >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 12,
-        }}
-      >
-        {FIELDS.map((field) => (
-          <div
-            key={field.key}
-            style={field.fullWidth ? { gridColumn: "1 / -1" } : {}}
-          >
-            <label style={labelStyle}>
-              {field.label}
-              {field.required && " *"}
-            </label>
-
-            {field.type === "select" ? (
-              <select
-                value={form[field.key]}
-                onChange={(e) =>
-                  set(field.key, e.target.value as EventType | LeadSource)
-                }
-                style={inputStyle}
-              >
-                {field.options?.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type={field.type}
-                placeholder={field.placeholder ?? field.label}
-                value={form[field.key]}
-                onChange={(e) => set(field.key, e.target.value)}
-                style={inputStyle}
-              />
-            )}
-          </div>
-        ))}
+    <Modal title="Add New Lead" onClose={onClose}
+      footer={<>
+        <Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" onClick={handleSubmit}>Add Lead</Button>
+      </>}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div style={{ gridColumn: "1 / -1" }}>
+          <label style={labelStyle}>Full Name *</label>
+          <input placeholder="Full Name" value={form.name} onChange={(e) => set("name", e.target.value)} style={inputStyle} />
+        </div>
+        <div>
+          <label style={labelStyle}>Phone</label>
+          <input placeholder="Phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} style={inputStyle} />
+        </div>
+        <div>
+          <label style={labelStyle}>Email</label>
+          <input type="email" placeholder="Email" value={form.email} onChange={(e) => set("email", e.target.value)} style={inputStyle} />
+        </div>
+        <div>
+          <label style={labelStyle}>Event Type *</label>
+          <select value={form.event_type} onChange={(e) => set("event_type", e.target.value)} style={inputStyle}>
+            {EVENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={labelStyle}>Event Date *</label>
+          <input type="date" value={form.event_date} onChange={(e) => set("event_date", e.target.value)} style={inputStyle} />
+        </div>
+        <div>
+          <label style={labelStyle}>Guest Count</label>
+          <input type="number" placeholder="Guest Count" value={form.guest_count} onChange={(e) => set("guest_count", e.target.value)} style={inputStyle} />
+        </div>
+        <div>
+          <label style={labelStyle}>Budget</label>
+          <input placeholder="e.g. ₹5L - ₹8L" value={form.budget} onChange={(e) => set("budget", e.target.value)} style={inputStyle} />
+        </div>
+        <div>
+          <label style={labelStyle}>Branch *</label>
+          <select value={form.branch} onChange={(e) => set("branch", e.target.value)} style={inputStyle}>
+            {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={labelStyle}>Source</label>
+          <select value={form.source} onChange={(e) => set("source", e.target.value)} style={inputStyle}>
+            {LEAD_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={labelStyle}>Assigned To</label>
+          <input placeholder="Assigned To" value={form.assigned_to} onChange={(e) => set("assigned_to", e.target.value)} style={inputStyle} />
+        </div>
       </div>
     </Modal>
   );
