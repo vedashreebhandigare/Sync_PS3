@@ -83,7 +83,7 @@ export default function LeadDetailPanel({
 
   return (
     <div className="animate-slide-in"
-      style={{ position: "fixed", top: 0, right: 0, width: 480, height: "100vh", background: "var(--bg-card)", boxShadow: "var(--shadow-panel)", zIndex: 200, display: "flex", flexDirection: "column", fontFamily: "var(--font-primary)" }}>
+      style={{ position: "fixed", top: 0, right: 0, width: 980, height: "100vh", background: "var(--bg-card)", boxShadow: "var(--shadow-panel)", zIndex: 200, display: "flex", flexDirection: "column", fontFamily: "var(--font-primary)" }}>
 
       {/* ════════ HEADER ════════ */}
       <div style={{ padding: "16px 22px", borderBottom: "1px solid var(--border-default)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>

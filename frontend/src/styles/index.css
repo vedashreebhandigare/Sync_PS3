@@ -4,44 +4,44 @@
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap");
 
 /* ============================================
-   CSS CUSTOM PROPERTIES — AURORA DARK THEME
+   CSS CUSTOM PROPERTIES — AURORA LIGHT THEME
    ============================================ */
 :root {
   --font-primary: "Outfit", system-ui, -apple-system, sans-serif;
 
-  /* Backgrounds — dark surfaces */
-  --bg-app: #111827;
-  --bg-card: #1a2332;
-  --bg-section: #151f2d;
-  --bg-hover: #1f2a3a;
-  --bg-input: #1a2332;
-  --bg-input-focus: #1f2a3a;
+  /* Backgrounds — light surfaces */
+  --bg-app: #f8fafc;       /* Slate 50 - Main app background */
+  --bg-card: #ffffff;      /* Pure white for cards */
+  --bg-section: #ffffff;   /* Pure white for sections */
+  --bg-hover: #f1f5f9;     /* Slate 100 - Interactive hover state */
+  --bg-input: #ffffff;
+  --bg-input-focus: #ffffff;
 
-  /* Text — light on dark */
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  /* Text — dark on light */
+  --text-primary: #0f172a; /* Slate 900 */
+  --text-secondary: #475569; /* Slate 600 */
+  --text-muted: #94a3b8;   /* Slate 400 */
 
-  /* Borders — subtle white-alpha */
-  --border-default: rgba(255, 255, 255, 0.06);
-  --border-light: rgba(255, 255, 255, 0.03);
+  /* Borders — subtle black-alpha */
+  --border-default: rgba(0, 0, 0, 0.08);
+  --border-light: rgba(0, 0, 0, 0.04);
 
-  /* Accent — Aurora teal-green */
-  --accent: #22d3a7;
-  --accent-bg: rgba(34, 211, 167, 0.12);
-  --accent-hover: #1ab892;
-  --accent-glow: rgba(34, 211, 167, 0.08);
+  /* Accent — Aurora teal-green (Darkened for accessibility on white) */
+  --accent: #14b8a6;       /* Teal 500 - Darker than dark mode for contrast */
+  --accent-bg: rgba(20, 184, 166, 0.1);
+  --accent-hover: #0d9488; /* Teal 600 */
+  --accent-glow: rgba(20, 184, 166, 0.15);
 
-  /* Semantic — dark-mode adjusted */
-  --danger: #f87171;
-  --danger-bg: rgba(248, 113, 113, 0.1);
-  --danger-border: rgba(248, 113, 113, 0.25);
-  --success: #34d399;
-  --success-bg: rgba(52, 211, 153, 0.1);
-  --success-border: rgba(52, 211, 153, 0.25);
-  --warning: #fbbf24;
+  /* Semantic — light-mode adjusted (Darker shades for visibility) */
+  --danger: #ef4444;       /* Red 500 */
+  --danger-bg: rgba(239, 68, 68, 0.08);
+  --danger-border: rgba(239, 68, 68, 0.2);
+  --success: #10b981;      /* Emerald 500 */
+  --success-bg: rgba(16, 185, 129, 0.08);
+  --success-border: rgba(16, 185, 129, 0.2);
+  --warning: #f59e0b;      /* Amber 500 */
 
-  /* Spacing */
+  /* Spacing (Unchanged) */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -49,20 +49,20 @@
   --space-5: 20px;
   --space-6: 24px;
 
-  /* Radii */
+  /* Radii (Unchanged) */
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 10px;
   --radius-xl: 14px;
   --radius-full: 9999px;
 
-  /* Shadows — deeper for dark bg */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
-  --shadow-panel: -8px 0 40px rgba(0, 0, 0, 0.6);
+  /* Shadows — softer, diffuse shadows for light bg */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-panel: -8px 0 20px rgba(0, 0, 0, 0.08);
 
-  /* Transitions */
+  /* Transitions (Unchanged) */
   --transition-fast: 150ms ease;
   --transition-normal: 200ms ease;
   --transition-smooth: 250ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -101,7 +101,7 @@ button {
 }
 
 /* ============================================
-   SCROLLBAR — dark
+   SCROLLBAR — light
    ============================================ */
 ::-webkit-scrollbar {
   width: 4px;
@@ -111,11 +111,11 @@ button {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.15);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.25);
 }
 
 /* ============================================
