@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import init_db
-from routes import branches, contractors, inventory, leads, menu_catalog, stats
+from routes import auth, branches, contractors, inventory, leads, menu_catalog, stats, calendar, partners
 from seed import seed
 
 
@@ -27,12 +27,15 @@ app.add_middleware(
 )
 
 # Register routers
+app.include_router(auth.router)
 app.include_router(leads.router)
 app.include_router(branches.router)
 app.include_router(contractors.router)
 app.include_router(menu_catalog.router)
 app.include_router(inventory.router)
 app.include_router(stats.router)
+app.include_router(calendar.router)
+app.include_router(partners.router)
 
 
 @app.get("/")

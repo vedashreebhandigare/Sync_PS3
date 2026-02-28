@@ -41,9 +41,11 @@ class SourceEnum(str, enum.Enum):
     SOCIAL_MEDIA = "Social Media"
     GOOGLE_ADS = "Google Ads"
     WHATSAPP = "WhatsApp"
+    PARTNER_REFERRAL = "Partner Referral"
 
 
 class StageEnum(str, enum.Enum):
+    POTENTIAL = "potential"
     NEW = "new"
     CALL = "call"
     VISIT = "visit"
@@ -59,7 +61,7 @@ class StageEnum(str, enum.Enum):
 
 
 STAGE_ORDER = [
-    "new", "call", "visit", "tasting", "menu",
+    "potential", "new", "call", "visit", "tasting", "menu",
     "advance", "decor", "fullpay", "post", "feedback",
 ]
 TERMINAL_STAGES = {"converted", "lost"}
@@ -81,6 +83,16 @@ class MenuCategoryEnum(str, enum.Enum):
     BEVERAGES = "Beverages"
 
 
+class PartnerStatusEnum(str, enum.Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+
+
+class UserRoleEnum(str, enum.Enum):
+    OWNER = "owner"
+    BRANCH_MANAGER = "branch_manager"
+
+
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
@@ -91,6 +103,23 @@ def gen_uuid() -> str:
 # ---------------------------------------------------------------------------
 # Models
 # ---------------------------------------------------------------------------
+
+class User(Base):
+    """Application user — either an owner or a branch manager."""
+    __tablename__ = "users"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    username = Column(String, unique=True, nullable=False, index=True)
+    password_hash = Column(String, nullable=False)
+    name = Column(String, nullable=False)
+    role = Column(String, nullable=False, default="branch_manager")  # "owner" | "branch_manager"
+    branch_id = Column(String, ForeignKey("branches.id"), nullable=True)  # NULL for owner
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    branch = relationship("Branch", foreign_keys=[branch_id])
+
+
 class Branch(Base):
     __tablename__ = "branches"
 
@@ -123,6 +152,29 @@ class Contractor(Base):
     phone = Column(String, default="")
 
 
+class Partner(Base):
+    """
+    External tie-up / referral partner (jewellery shops, wedding planners, etc.)
+    that refers potential leads to the banquet business.
+    """
+    __tablename__ = "partners"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    name = Column(String, nullable=False)
+    type = Column(String, nullable=False)          # e.g. "Jewellery Shop", "Wedding Planner"
+    contact_person = Column(String, default="")
+    phone = Column(String, default="")
+    email = Column(String, default="")
+    branch_id = Column(String, ForeignKey("branches.id"), nullable=True)
+    status = Column(String, default="active")      # "active" | "inactive"
+    notes = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    branch = relationship("Branch")
+    referred_leads = relationship("Lead", back_populates="referred_by_partner", foreign_keys="Lead.referred_by_partner_id")
+
+
 class Lead(Base):
     __tablename__ = "leads"
 
@@ -142,6 +194,9 @@ class Lead(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     selected_hall_id = Column(String, ForeignKey("halls.id"), nullable=True)
+
+    # Partner referral link
+    referred_by_partner_id = Column(String, ForeignKey("partners.id"), nullable=True)
 
     # Menu total (cached, recalculated on menu change)
     menu_total = Column(Float, default=0.0)
@@ -168,6 +223,7 @@ class Lead(Base):
 
     # Relationships
     selected_hall = relationship("Hall", foreign_keys=[selected_hall_id])
+    referred_by_partner = relationship("Partner", back_populates="referred_leads", foreign_keys=[referred_by_partner_id])
     menu_items = relationship("MenuItem", back_populates="lead", cascade="all, delete-orphan")
     add_ons = relationship("AddOn", back_populates="lead", cascade="all, delete-orphan")
     remarks = relationship("Remark", back_populates="lead", cascade="all, delete-orphan", order_by="Remark.date")

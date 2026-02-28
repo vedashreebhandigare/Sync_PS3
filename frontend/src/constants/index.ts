@@ -5,6 +5,7 @@ import type { Stage, StageId, EventType, LeadSource } from "../types";
 // ============================================
 
 export const STAGES: Stage[] = [
+  { id: "potential", label: "Potential Lead", icon: "🤝", color: "#a855f7", bg: "rgba(168,85,247,0.12)" },
   { id: "new", label: "New Lead", icon: "✦", color: "#6366f1", bg: "rgba(99,102,241,0.12)" },
   { id: "call", label: "Call", icon: "✆", color: "#8b5cf6", bg: "rgba(139,92,246,0.12)" },
   { id: "visit", label: "Property Visit", icon: "⌂", color: "#d97706", bg: "rgba(217,119,6,0.12)" },
@@ -31,7 +32,7 @@ export const EVENT_TYPES: EventType[] = [
 ];
 
 export const LEAD_SOURCES: LeadSource[] = [
-  "Walk-in", "Website", "Referral", "Social Media", "Google Ads", "WhatsApp",
+  "Walk-in", "Website", "Referral", "Social Media", "Google Ads", "WhatsApp", "Partner Referral",
 ];
 
 export const MENU_CATEGORIES = [

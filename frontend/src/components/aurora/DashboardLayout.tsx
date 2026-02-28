@@ -4,20 +4,42 @@ import TopHeader from "./TopHeader";
 import LeadPipelinePage from "./LeadPipelinePage";
 import LogisticsPage from "../logistics/LogisticsPage";
 import MenuPage from "../menu/MenuPage";
+import BookingsOverviewPage from "./BookingsOverviewPage";
 
 export default function DashboardLayout() {
-    const [activeView, setActiveView] = useState<string>("lead-pipeline");
+    const [activePage, setActivePage] = useState<string>("lead-pipeline");
+
+    const renderPage = () => {
+        switch (activePage) {
+            case "logistics":
+                return <LogisticsPage />;
+            case "menu":
+                return <MenuPage />;
+            case "calendar":
+            case "all-bookings":
+                return <BookingsOverviewPage />;
+            case "lead-pipeline":
+            default:
+                return <LeadPipelinePage />;
+        }
+    };
 
     return (
         <div className="aurora-root">
-            {/* Left sidebar */}
-            <Sidebar activeItemId={activeView} onItemClick={setActiveView} />
+            <Sidebar activeItemId={activePage} onItemClick={setActivePage} />
 
-            {/* Right: header + content */}
             <div className="aurora-main-wrapper">
                 <TopHeader />
-                <main className="aurora-content" style={{ padding: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                    {activeView === "logistics" ? <LogisticsPage /> : activeView === "menu" ? <MenuPage /> : <LeadPipelinePage />}
+                <main
+                    className="aurora-content"
+                    style={{
+                        padding: 0,
+                        display: "flex",
+                        flexDirection: "column",
+                        overflow: "hidden",
+                    }}
+                >
+                    {renderPage()}
                 </main>
             </div>
         </div>

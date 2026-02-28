@@ -60,7 +60,7 @@ export default function KanbanBoard({
       {/* Board */}
       <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: 14 }}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, alignContent: "flex-start" }}>
-          {STAGES.map((stage) => (
+          {STAGES.map((stage, idx) => (
             <KanbanColumn
               key={stage.id}
               stage={stage}
@@ -68,6 +68,7 @@ export default function KanbanBoard({
               collapsed={collapsed.has(stage.id)}
               onToggleCollapse={() => toggle(stage.id)}
               onSelectLead={onSelectLead}
+              stepNumber={idx + 1}
             />
           ))}
         </div>
@@ -75,9 +76,11 @@ export default function KanbanBoard({
 
       {/* Overlay */}
       {selectedLead && (
-        <div className="animate-fade-in"
+        <div
+          className="animate-fade-in"
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 150 }}
-          onClick={onCloseDetail} />
+          onClick={onCloseDetail}
+        />
       )}
 
       {/* Loading indicator */}

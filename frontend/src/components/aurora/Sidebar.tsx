@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { ReactNode } from "react";
 import { FoodIcon } from "../ui";
 
 /* ─── Menu Data ─── */
@@ -6,7 +7,7 @@ import { FoodIcon } from "../ui";
 interface MenuItem {
   id: string;
   label: string;
-  icon: any;
+  icon: ReactNode;
   hasChevron?: boolean;
   badge?: string;
   subItems?: { id: string; label: string }[];
@@ -50,15 +51,22 @@ const MENU: MenuItem[] = [
 
 interface SidebarProps {
   activeItemId?: string;
-  onItemClick?: (id: string) => void;
+  onNavigate?: (id: string) => void;
 }
 
-export default function Sidebar({ activeItemId = "dashboard", onItemClick }: SidebarProps) {
+export default function Sidebar({ activeItemId = "dashboard", onNavigate }: SidebarProps) {
   const [activeId, setActiveId] = useState(activeItemId);
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({
     leads: true,
     bookings: true,
   });
+
+  useEffect(() => { setActiveId(activeItemId); }, [activeItemId]);
+
+  const navigate = (id: string) => {
+    setActiveId(id);
+    onNavigate?.(id);
+  };
 
   const toggleExpand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -91,8 +99,7 @@ export default function Sidebar({ activeItemId = "dashboard", onItemClick }: Sid
                 if (item.subItems) {
                   toggleExpand(item.id, e);
                 } else {
-                  setActiveId(item.id);
-                  if (onItemClick) onItemClick(item.id);
+                  navigate(item.id);
                 }
               }}
             >
@@ -121,10 +128,7 @@ export default function Sidebar({ activeItemId = "dashboard", onItemClick }: Sid
                   <div
                     key={sub.id}
                     className={`aurora-sidebar-subitem${activeId === sub.id ? " active" : ""}`}
-                    onClick={() => {
-                      setActiveId(sub.id);
-                      if (onItemClick) onItemClick(sub.id);
-                    }}
+                    onClick={() => navigate(sub.id)}
                     style={{
                       padding: "6px 12px",
                       fontSize: "12.5px",
@@ -231,3 +235,4 @@ function PackageIcon() {
     </svg>
   );
 }
+

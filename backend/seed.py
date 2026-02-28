@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from auth import hash_password
 from database import SessionLocal, init_db
 from models import (
     Branch,
@@ -12,7 +13,9 @@ from models import (
     MenuCatalogItem,
     MenuItem,
     InventoryItem,
+    Partner,
     Remark,
+    User,
 )
 
 
@@ -40,6 +43,59 @@ def seed():
         Branch(id="branch-panvel", name="Panvel Branch"),
     ]
     db.add_all(branches)
+    db.flush()
+
+    # ------------------------------------------------------------------
+    # Users (Owner + Branch Managers)
+    # ------------------------------------------------------------------
+    users = [
+        User(
+            id="user-owner",
+            username="owner",
+            password_hash=hash_password("owner123"),
+            name="Rajiv Mehta",
+            role="owner",
+            branch_id=None,  # owner sees all
+            is_active=True,
+        ),
+        User(
+            id="user-mgr-andheri",
+            username="andheri.mgr",
+            password_hash=hash_password("andheri123"),
+            name="Priya Sharma",
+            role="branch_manager",
+            branch_id="branch-andheri",
+            is_active=True,
+        ),
+        User(
+            id="user-mgr-thane",
+            username="thane.mgr",
+            password_hash=hash_password("thane123"),
+            name="Amit Desai",
+            role="branch_manager",
+            branch_id="branch-thane",
+            is_active=True,
+        ),
+        User(
+            id="user-mgr-powai",
+            username="powai.mgr",
+            password_hash=hash_password("powai123"),
+            name="Sneha Nair",
+            role="branch_manager",
+            branch_id="branch-powai",
+            is_active=True,
+        ),
+        User(
+            id="user-mgr-panvel",
+            username="panvel.mgr",
+            password_hash=hash_password("panvel123"),
+            name="Vikram Joshi",
+            role="branch_manager",
+            branch_id="branch-panvel",
+            is_active=True,
+        ),
+    ]
+    db.add_all(users)
     db.flush()
 
     # ------------------------------------------------------------------
@@ -84,6 +140,74 @@ def seed():
     db.flush()
 
     # ------------------------------------------------------------------
+    # Partners (Lead Generation tie-ups)
+    # ------------------------------------------------------------------
+    partners = [
+        Partner(
+            id="partner-1",
+            name="Rajesh Jewellers",
+            type="Jewellery Shop",
+            contact_person="Rajesh Kumar",
+            phone="+91 98765 43210",
+            email="rajesh@jewellers.com",
+            branch_id="branch-andheri",
+            status="active",
+            notes="Long-standing tie-up. Refers wedding clients regularly.",
+            created_at=datetime.utcnow() - timedelta(days=180),
+        ),
+        Partner(
+            id="partner-2",
+            name="Sharma Wedding Planners",
+            type="Wedding Planner",
+            contact_person="Priya Sharma",
+            phone="+91 87654 32109",
+            email="priya@sharmaweddings.com",
+            branch_id=None,
+            status="active",
+            notes="Premium wedding planner. High conversion rate.",
+            created_at=datetime.utcnow() - timedelta(days=120),
+        ),
+        Partner(
+            id="partner-3",
+            name="Mehta Saree House",
+            type="Clothing Store",
+            contact_person="Anita Mehta",
+            phone="+91 76543 21098",
+            email="anita@mehtasarees.com",
+            branch_id="branch-thane",
+            status="active",
+            notes="Refers engagement and wedding clients from Thane area.",
+            created_at=datetime.utcnow() - timedelta(days=90),
+        ),
+        Partner(
+            id="partner-4",
+            name="Patel Caterers",
+            type="Catering Partner",
+            contact_person="Suresh Patel",
+            phone="+91 65432 10987",
+            email="suresh@patelcaterers.com",
+            branch_id="branch-panvel",
+            status="inactive",
+            notes="Paused collaboration. May resume next quarter.",
+            created_at=datetime.utcnow() - timedelta(days=200),
+        ),
+        Partner(
+            id="partner-5",
+            name="Kapoor Photography Studio",
+            type="Photography Studio",
+            contact_person="Arjun Kapoor",
+            phone="+91 99887 76655",
+            email="arjun@kapoorstudio.com",
+            branch_id="branch-powai",
+            status="active",
+            notes="Wedding photographer who recommends our venues to clients.",
+            created_at=datetime.utcnow() - timedelta(days=60),
+        ),
+    ]
+    db.add_all(partners)
+    db.flush()
+
+    # ------------------------------------------------------------------
     # Menu Catalog (reference items)
     # ------------------------------------------------------------------
     catalog = [
@@ -107,7 +231,7 @@ def seed():
     db.flush()
 
     # ------------------------------------------------------------------
-    # Sample Leads (12, spread across stages)
+    # Sample Leads (14: original 12 + 2 potential leads from partners)
     # ------------------------------------------------------------------
     today = date.today()
 
@@ -115,7 +239,7 @@ def seed():
         name, phone, email, etype, edate, guests, budget, branch_id, source,
         stage, assigned, hall_id=None, menu_items=None, advance_paid=0.0,
         decor_type="", decor_contractors="", remarks_text=None,
-        feedback_pos="", feedback_neg="",
+        feedback_pos="", feedback_neg="", referred_by_partner_id=None,
     ):
         lead_id = gen()
         menu = []
@@ -139,6 +263,7 @@ def seed():
             advance_paid=advance_paid,
             decor_type=decor_type, decor_contractors=decor_contractors,
             feedback_positives=feedback_pos, feedback_negatives=feedback_neg,
+            referred_by_partner_id=referred_by_partner_id,
         )
         lead.menu_items = menu
         lead.remarks = [
@@ -154,6 +279,16 @@ def seed():
     ]
 
     leads = [
+        _lead("Sanjay Kapoor", "9876543230", "sanjay@example.com", "Wedding",
+              today + timedelta(days=70), 350, "₹9,00,000", "branch-andheri",
+              "Partner Referral", "potential", "",
+              remarks_text="Referred by partner: Rajesh Jewellers (Jewellery Shop)",
+              referred_by_partner_id="partner-1"),
+        _lead("Meena Agarwal", "9876543231", "meena@example.com", "Engagement",
+              today + timedelta(days=40), 200, "₹4,00,000", "branch-thane",
+              "Partner Referral", "potential", "",
+              remarks_text="Referred by partner: Mehta Saree House (Clothing Store)",
+              referred_by_partner_id="partner-3"),
         _lead("Aarav Sharma", "9876543210", "aarav@example.com", "Wedding",
               today + timedelta(days=45), 300, "₹5,00,000", "branch-andheri",
               "Referral", "new", "Priya"),
@@ -189,6 +324,16 @@ def seed():
               today + timedelta(days=3), 350, "₹7,00,000", "branch-andheri",
               "Walk-in", "feedback", "Amit", hall_id="hall-3", menu_items=sample_menu,
               advance_paid=80500.0, feedback_pos="Great food", feedback_neg="Parking was tight"),
+        _lead("Ritu Bhatia", "9876543232", "ritu@example.com", "Wedding",
+              today - timedelta(days=5), 280, "₹6,50,000", "branch-andheri",
+              "Partner Referral", "converted", "Priya", hall_id="hall-1", menu_items=sample_menu,
+              advance_paid=64400.0, remarks_text="Referred by Rajesh Jewellers. Successfully converted.",
+              referred_by_partner_id="partner-1"),
+        _lead("Karan Shah", "9876543233", "karan@example.com", "Reception",
+              today + timedelta(days=35), 180, "₹3,50,000", "branch-powai",
+              "Partner Referral", "call", "Amit",
+              remarks_text="Referred by Kapoor Photography Studio.",
+              referred_by_partner_id="partner-5"),
         _lead("Manish Gupta", "9876543220", "manish@example.com", "Reception",
               today - timedelta(days=10), 200, "₹4,50,000", "branch-thane",
               "Social Media", "converted", "Sneha", hall_id="hall-5", menu_items=sample_menu,
@@ -201,7 +346,7 @@ def seed():
     db.add_all(leads)
     db.commit()
     db.close()
-    print(f"Seeded: 4 branches, 10 halls, 5 contractors, {len(catalog)} menu items, {len(leads)} leads.")
+    print(f"Seeded: 4 branches, {len(users)} users, 10 halls, 5 contractors, 5 partners, {len(catalog)} menu items, {len(leads)} leads.")
 
 
 if __name__ == "__main__":

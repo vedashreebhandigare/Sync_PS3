@@ -1,8 +1,30 @@
 // ============================================
+// AUTH TYPES
+// ============================================
+
+export type UserRole = "owner" | "branch_manager";
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  name: string;
+  role: UserRole;
+  branch_id: string | null;
+  branch_name: string | null;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user: AuthUser;
+}
+
+// ============================================
 // CORE DOMAIN TYPES
 // ============================================
 
 export type StageId =
+  | "potential"
   | "new"
   | "call"
   | "visit"
@@ -40,112 +62,57 @@ export type LeadSource =
   | "Referral"
   | "Social Media"
   | "Google Ads"
-  | "WhatsApp";
+  | "WhatsApp"
+  | "Partner Referral";
 
 export type DecorType = "" | "internal" | "external";
 
-export type MenuCategory = "Starters" | "Snacks" | "Indian Chaat" | "Main Course" | "Breads" | "Desserts" | "Beverages";
+export type MenuCategory =
+  | "Starters"
+  | "Main Course"
+  | "Breads"
+  | "Desserts"
+  | "Beverages";
 
 // ============================================
 // API RESPONSE TYPES (snake_case from backend)
 // ============================================
 
-/** Returned by GET /api/branches */
 export interface Branch {
   id: string;
   name: string;
 }
 
-// ============================================
-// INVENTORY TYPES
-// ============================================
-
-export interface InventoryItem {
-  id: string;
-  name: string;
-  unit: string;
-  quantity: number;
-  low_stock_threshold: number;
-}
-
-export interface InventoryItemInput {
-  name: string;
-  unit: string;
-  quantity: number;
-  low_stock_threshold: number;
-}
-
-export interface MenuItemIngredient {
-  id: string;
-  menu_item_id: string;
-  inventory_item_id: string;
-  quantity_per_plate: number;
-  inventory_item?: InventoryItem;
-}
-
-export interface MenuItemIngredientInput {
-  inventory_item_id: string;
-  quantity_per_plate: number;
-}
-
-/** Returned by GET /api/branches/{id}/halls */
 export interface Hall {
   id: string;
   branch_id: string;
   name: string;
   location: string;
   capacity: number;
-  event_types: string;       // comma-separated, e.g. "Wedding,Reception"
+  event_types: string;
   cost_per_plate: number;
 }
 
-/** Returned inside LeadFull.menu_items */
 export interface MenuItem {
   id: string;
   name: string;
   category: MenuCategory;
   cost_per_plate: number;
-  ingredients: MenuItemIngredient[];
 }
 
-/** Sent to PUT /api/leads/{id}/menu (no id — backend generates) */
 export interface MenuItemInput {
   name: string;
   category: MenuCategory;
   cost_per_plate: number;
-  ingredients: MenuItemIngredientInput[];
 }
 
-export interface CatalogIngredient {
-  id: string;
-  catalog_item_id: string;
-  inventory_item_id: string;
-  quantity_per_plate: number;
-  inventory_item?: InventoryItem;
-}
-
-export interface CatalogIngredientInput {
-  inventory_item_id: string;
-  quantity_per_plate: number;
-}
-
-/** Returned by GET /api/menu-catalog */
 export interface CatalogItem {
   id: string;
   name: string;
   category: MenuCategory;
   cost_per_plate: number;
-  catalog_ingredients?: CatalogIngredient[];
 }
 
-export interface CatalogItemInput {
-  name: string;
-  category: string;
-  cost_per_plate: number;
-  catalog_ingredients: CatalogIngredientInput[];
-}
-
-/** Returned by GET /api/contractors */
 export interface Contractor {
   id: string;
   name: string;
@@ -153,20 +120,17 @@ export interface Contractor {
   phone: string;
 }
 
-/** Returned inside LeadFull.add_ons */
 export interface AddOn {
   id: string;
   desc: string;
   cost: number;
 }
 
-/** Sent to PUT /api/leads/{id}/addons */
 export interface AddOnInput {
   desc: string;
   cost: number;
 }
 
-/** Returned inside LeadFull.remarks */
 export interface Remark {
   id: number;
   text: string;
@@ -176,10 +140,58 @@ export interface Remark {
 }
 
 // ============================================
+// PARTNER TYPES
+// ============================================
+
+export interface Partner {
+  id: string;
+  name: string;
+  type: string;
+  contact_person: string;
+  phone: string;
+  email: string;
+  branch_id: string | null;
+  status: "active" | "inactive";
+  notes: string;
+  created_at: string;
+  leads_referred: number;
+  leads_converted: number;
+  conversion_rate: number;
+}
+
+export interface PartnerCreateInput {
+  name: string;
+  type: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  branch_id?: string | null;
+  status?: "active" | "inactive";
+  notes?: string;
+}
+
+export interface PartnerUpdateInput {
+  name?: string;
+  type?: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  branch_id?: string | null;
+  status?: "active" | "inactive";
+  notes?: string;
+}
+
+export interface PartnerSummary {
+  active_partners: number;
+  total_referred: number;
+  total_converted: number;
+  conversion_rate: number;
+}
+
+// ============================================
 // LEAD TYPES
 // ============================================
 
-/** Returned by GET /api/leads (list — no nested sub-resources) */
 export interface LeadBrief {
   id: string;
   name: string;
@@ -189,7 +201,7 @@ export interface LeadBrief {
   event_date: string;
   guest_count: number;
   budget: string;
-  branch: string;            // branch ID e.g. "branch-andheri"
+  branch: string;
   source: LeadSource;
   stage: StageId;
   assigned_to: string;
@@ -197,10 +209,9 @@ export interface LeadBrief {
   created_at: string;
   total_cost: number;
   advance_paid: number;
-  inventory_deducted: boolean;
+  referred_by_partner_id: string | null;
 }
 
-/** Returned by GET /api/leads/{id} (full detail with nested data) */
 export interface LeadFull extends LeadBrief {
   selected_hall_id: string | null;
   menu_total: number;
@@ -208,7 +219,7 @@ export interface LeadFull extends LeadBrief {
   allergies: string;
   advance_percent: number;
   decor_type: DecorType;
-  decor_contractors: string;   // comma-separated contractor IDs
+  decor_contractors: string;
   feedback_positives: string;
   feedback_negatives: string;
   menu_items: MenuItem[];
@@ -216,7 +227,6 @@ export interface LeadFull extends LeadBrief {
   remarks: Remark[];
 }
 
-/** Sent to POST /api/leads */
 export interface LeadCreateInput {
   name: string;
   phone?: string;
@@ -232,9 +242,9 @@ export interface LeadCreateInput {
   food_preferences?: string;
   allergies?: string;
   advance_percent?: number;
+  referred_by_partner_id?: string | null;
 }
 
-/** Sent to PUT /api/leads/{id} (partial update) */
 export interface LeadUpdateInput {
   name?: string;
   phone?: string;
@@ -255,6 +265,7 @@ export interface LeadUpdateInput {
   decor_contractors?: string;
   feedback_positives?: string;
   feedback_negatives?: string;
+  referred_by_partner_id?: string | null;
 }
 
 // ============================================
@@ -271,6 +282,7 @@ export interface SummaryStats {
   active: number;
   converted: number;
   lost: number;
+  potential: number;
 }
 
 // ============================================
@@ -285,7 +297,7 @@ export interface LeadFilters {
 }
 
 // ============================================
-// UI TYPES (unchanged)
+// UI TYPES
 // ============================================
 
 export type ButtonVariant =
@@ -294,3 +306,23 @@ export type ButtonVariant =
   | "danger"
   | "success"
   | "ghost";
+
+// ============================================
+// INVENTORY / LOGISTICS TYPES
+// ============================================
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  unit: string;
+  quantity: number;
+  low_stock_threshold: number;
+}
+
+export interface InventoryItemInput {
+  name: string;
+  unit: string;
+  quantity: number;
+  low_stock_threshold: number;
+}
+

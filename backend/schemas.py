@@ -38,6 +38,67 @@ class ContractorOut(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Partner (Lead Generation)
+# ---------------------------------------------------------------------------
+class PartnerCreate(BaseModel):
+    name: str
+    type: str
+    contact_person: str = ""
+    phone: str = ""
+    email: str = ""
+    branch_id: Optional[str] = None
+    status: str = "active"
+    notes: str = ""
+
+
+class PartnerUpdate(BaseModel):
+    name: Optional[str] = None
+    type: Optional[str] = None
+    contact_person: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    branch_id: Optional[str] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class PartnerOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    type: str
+    contact_person: str
+    phone: str
+    email: str
+    branch_id: Optional[str]
+    status: str
+    notes: str
+    created_at: datetime
+
+
+class PartnerStats(BaseModel):
+    """Partner record enriched with computed referral statistics."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    type: str
+    contact_person: str
+    phone: str
+    email: str
+    branch_id: Optional[str]
+    status: str
+    notes: str
+    created_at: datetime
+
+    # Computed fields (not from ORM directly)
+    leads_referred: int = 0
+    leads_converted: int = 0
+    conversion_rate: float = 0.0
+
+
+# ---------------------------------------------------------------------------
 # Menu Catalog
 # ---------------------------------------------------------------------------
 class CatalogIngredientIn(BaseModel):
@@ -165,6 +226,7 @@ class LeadCreate(BaseModel):
     food_preferences: str = ""
     allergies: str = ""
     advance_percent: int = 20
+    referred_by_partner_id: Optional[str] = None
 
 
 class LeadUpdate(BaseModel):
@@ -187,6 +249,7 @@ class LeadUpdate(BaseModel):
     decor_contractors: Optional[str] = None
     feedback_positives: Optional[str] = None
     feedback_negatives: Optional[str] = None
+    referred_by_partner_id: Optional[str] = None
 
 
 class LeadOut(BaseModel):
@@ -208,6 +271,8 @@ class LeadOut(BaseModel):
     created_at: datetime
 
     selected_hall_id: Optional[str]
+    referred_by_partner_id: Optional[str]
+
     menu_total: float
     food_preferences: str
     allergies: str
@@ -247,6 +312,7 @@ class LeadBrief(BaseModel):
     created_at: datetime
     total_cost: float
     advance_paid: float
+    referred_by_partner_id: Optional[str]
 
 
 # ---------------------------------------------------------------------------
@@ -276,3 +342,4 @@ class SummaryStats(BaseModel):
     active: int
     converted: int
     lost: int
+    potential: int = 0
