@@ -1,6 +1,6 @@
 import type { StageId } from "../../types";
 import { Button, PlusIcon, UploadIcon } from "../ui";
-import { STAGES, TERMINAL_STAGES } from "../../constants";
+import { TERMINAL_STAGES } from "../../constants";
 
 interface HeaderProps {
   totalLeads: number;

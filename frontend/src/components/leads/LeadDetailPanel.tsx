@@ -1,6 +1,6 @@
 import type { Lead, Hall, MenuItem, StageId, DecorType, AddOn } from "../../types";
 import { STAGES, TERMINAL_STAGES } from "../../constants";
-import { formatDate, daysUntil, isUrgent } from "../../utils";
+import { formatDate, isUrgent } from "../../utils";
 import { Button, Badge, XIcon, InfoRow } from "../ui";
 import HallSelector from "./HallSelector";
 import FoodPreferences from "./FoodPreferences";
@@ -44,7 +44,6 @@ export default function LeadDetailPanel({
   const isTerminal = TERMINAL_STAGES.includes(lead.stage);
   const canFwd = stageIdx < STAGES.length - 1 && !isTerminal;
   const canBack = stageIdx > 0 && !isTerminal;
-  const days = daysUntil(lead.eventDate);
 
   /* shorthand updater */
   const patch = (partial: Partial<Lead>): void => {
