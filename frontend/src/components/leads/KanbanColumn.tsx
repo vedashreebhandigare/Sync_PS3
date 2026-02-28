@@ -29,19 +29,54 @@ export default function KanbanColumn({
   }
 
   return (
-    <div style={{ width: 248, minWidth: 248, display: "flex", flexDirection: "column", background: "var(--bg-section)", borderRadius: "var(--radius-lg)", border: "1px solid var(--border-default)", maxHeight: "calc(100vh - 170px)" }}>
-      <div onClick={onToggleCollapse}
-        style={{ padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border-default)", cursor: "pointer", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+    <div
+      style={{
+        width: 280,
+        minWidth: 280,
+        display: "flex",
+        flexDirection: "column",
+        background: "var(--bg-section)",
+        borderRadius: "var(--radius-lg)",
+        border: "1px solid var(--border-default)",
+        maxHeight: "calc(100vh - 170px)",
+        marginRight: 6,
+        marginBottom: 6,
+      }}
+    >
+      {/* Column header */}
+      <div
+        onClick={onToggleCollapse}
+        style={{
+          padding: "10px 12px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderBottom: "1px solid var(--border-default)",
+          cursor: "pointer",
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{ display: "flex", alignItems: "center", gap: 6 }}
+        >
           <span style={{ fontSize: 13 }}>{stage.icon}</span>
           <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-primary)" }}>{stage.label}</span>
         </div>
         <span style={{ fontSize: 11, fontWeight: 800, background: leads.length > 0 ? stage.color : "#d4d0de", color: "#fff", padding: "1px 7px", borderRadius: "var(--radius-lg)", minWidth: 18, textAlign: "center" }}>{leads.length}</span>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: 6, display: "flex", flexDirection: "column", gap: 6 }}>
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: 10,
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+        }}
+      >
         {leads.length === 0 ? (
-          <div style={{ padding: 18, textAlign: "center", color: "var(--text-muted)", fontSize: 12, fontStyle: "italic", fontFamily: "var(--font-primary)" }}>No leads</div>
+          <div style={{ padding: 10, textAlign: "center", color: "var(--text-muted)", fontSize: 12, fontStyle: "italic", fontFamily: "var(--font-primary)" }}>No leads</div>
         ) : (
           leads.map((lead) => (
             <LeadCard key={lead.id} lead={lead} stageColor={stage.color} onClick={onSelectLead} />

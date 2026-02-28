@@ -57,8 +57,16 @@ export default function KanbanBoard({
 
   return (
     <>
-      <div style={{ flex: 1, overflowX: "auto", overflowY: "hidden", padding: 14 }}>
-        <div style={{ display: "flex", gap: 10, height: "100%", minWidth: "fit-content" }}>
+      {/* Board */}
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: 14 }}>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 14,
+            alignContent: "flex-start",
+          }}
+        >
           {STAGES.map((stage) => (
             <KanbanColumn
               key={stage.id}
