@@ -40,9 +40,11 @@ class SourceEnum(str, enum.Enum):
     SOCIAL_MEDIA = "Social Media"
     GOOGLE_ADS = "Google Ads"
     WHATSAPP = "WhatsApp"
+    PARTNER_REFERRAL = "Partner Referral"
 
 
 class StageEnum(str, enum.Enum):
+    POTENTIAL = "potential"
     NEW = "new"
     CALL = "call"
     VISIT = "visit"
@@ -58,7 +60,7 @@ class StageEnum(str, enum.Enum):
 
 
 STAGE_ORDER = [
-    "new", "call", "visit", "tasting", "menu",
+    "potential", "new", "call", "visit", "tasting", "menu",
     "advance", "decor", "fullpay", "post", "feedback",
 ]
 TERMINAL_STAGES = {"converted", "lost"}
@@ -76,6 +78,11 @@ class MenuCategoryEnum(str, enum.Enum):
     BREADS = "Breads"
     DESSERTS = "Desserts"
     BEVERAGES = "Beverages"
+
+
+class PartnerStatusEnum(str, enum.Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
 
 
 # ---------------------------------------------------------------------------
@@ -120,6 +127,29 @@ class Contractor(Base):
     phone = Column(String, default="")
 
 
+class Partner(Base):
+    """
+    External tie-up / referral partner (jewellery shops, wedding planners, etc.)
+    that refers potential leads to the banquet business.
+    """
+    __tablename__ = "partners"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    name = Column(String, nullable=False)
+    type = Column(String, nullable=False)          # e.g. "Jewellery Shop", "Wedding Planner"
+    contact_person = Column(String, default="")
+    phone = Column(String, default="")
+    email = Column(String, default="")
+    branch_id = Column(String, ForeignKey("branches.id"), nullable=True)
+    status = Column(String, default="active")      # "active" | "inactive"
+    notes = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    branch = relationship("Branch")
+    referred_leads = relationship("Lead", back_populates="referred_by_partner", foreign_keys="Lead.referred_by_partner_id")
+
+
 class Lead(Base):
     __tablename__ = "leads"
 
@@ -139,6 +169,9 @@ class Lead(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     selected_hall_id = Column(String, ForeignKey("halls.id"), nullable=True)
+
+    # Partner referral link
+    referred_by_partner_id = Column(String, ForeignKey("partners.id"), nullable=True)
 
     # Menu total (cached, recalculated on menu change)
     menu_total = Column(Float, default=0.0)
@@ -162,6 +195,7 @@ class Lead(Base):
 
     # Relationships
     selected_hall = relationship("Hall", foreign_keys=[selected_hall_id])
+    referred_by_partner = relationship("Partner", back_populates="referred_leads", foreign_keys=[referred_by_partner_id])
     menu_items = relationship("MenuItem", back_populates="lead", cascade="all, delete-orphan")
     add_ons = relationship("AddOn", back_populates="lead", cascade="all, delete-orphan")
     remarks = relationship("Remark", back_populates="lead", cascade="all, delete-orphan", order_by="Remark.date")

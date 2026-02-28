@@ -16,6 +16,10 @@ import type {
   AddOnInput,
   SummaryStats,
   PipelineStat,
+  Partner,
+  PartnerCreateInput,
+  PartnerUpdateInput,
+  PartnerSummary,
 } from "../types";
 
 const BASE = "http://localhost:8000";
@@ -180,4 +184,60 @@ export async function fetchSummary(branch?: string): Promise<SummaryStats> {
 export async function fetchPipeline(branch?: string): Promise<PipelineStat[]> {
   const qs = branch ? `?branch=${branch}` : "";
   return request<PipelineStat[]>(`/api/stats/pipeline${qs}`);
+}
+
+// ============================================
+// PARTNERS (Lead Generation)
+// ============================================
+
+export async function fetchPartners(params?: {
+  status?: string;
+  branch_id?: string;
+  search?: string;
+}): Promise<Partner[]> {
+  const qs = new URLSearchParams();
+  if (params?.status) qs.set("status", params.status);
+  if (params?.branch_id) qs.set("branch_id", params.branch_id);
+  if (params?.search) qs.set("search", params.search);
+  const query = qs.toString();
+  return request<Partner[]>(`/api/partners${query ? `?${query}` : ""}`);
+}
+
+export async function fetchPartnerSummary(): Promise<PartnerSummary> {
+  return request<PartnerSummary>("/api/partners/summary");
+}
+
+export async function fetchPartner(id: string): Promise<Partner> {
+  return request<Partner>(`/api/partners/${id}`);
+}
+
+export async function createPartner(data: PartnerCreateInput): Promise<Partner> {
+  return request<Partner>("/api/partners", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updatePartner(
+  id: string,
+  data: PartnerUpdateInput
+): Promise<Partner> {
+  return request<Partner>(`/api/partners/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deletePartner(id: string): Promise<void> {
+  return request<void>(`/api/partners/${id}`, { method: "DELETE" });
+}
+
+export async function createReferralLead(
+  partnerId: string,
+  data: Record<string, unknown>
+): Promise<{ id: string; stage: string; partner: string }> {
+  return request(`/api/partners/${partnerId}/refer`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }

@@ -13,6 +13,7 @@ from models import (
     AddOn,
     Lead,
     MenuItem,
+    Partner,
     Remark,
     STAGE_ORDER,
     TERMINAL_STAGES,
@@ -77,6 +78,17 @@ def _load_lead(db: Session, lead_id: str) -> Lead:
     return lead
 
 
+def _resolve_initial_stage(source: str, partner_id: Optional[str]) -> str:
+    """Determine the starting stage for a new lead.
+
+    - Partner referrals start at 'potential' (need qualification first)
+    - All other sources start at 'new'
+    """
+    if source == "Partner Referral" or partner_id:
+        return "potential"
+    return "new"
+
+
 # ---------------------------------------------------------------------------
 # CRUD
 # ---------------------------------------------------------------------------
@@ -87,6 +99,7 @@ def list_leads(
     event_type: Optional[str] = Query(None),
     source: Optional[str] = Query(None),
     stage: Optional[str] = Query(None),
+    partner_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
     q = db.query(Lead)
@@ -105,6 +118,8 @@ def list_leads(
         q = q.filter(Lead.source == source)
     if stage:
         q = q.filter(Lead.stage == stage)
+    if partner_id:
+        q = q.filter(Lead.referred_by_partner_id == partner_id)
     return q.order_by(Lead.created_at.desc()).all()
 
 
@@ -115,6 +130,18 @@ def get_lead(lead_id: str, db: Session = Depends(get_db)):
 
 @router.post("", response_model=LeadOut, status_code=201)
 def create_lead(payload: LeadCreate, db: Session = Depends(get_db)):
+    # Validate partner if provided
+    if payload.referred_by_partner_id:
+        partner = db.query(Partner).filter(
+            Partner.id == payload.referred_by_partner_id
+        ).first()
+        if not partner:
+            raise HTTPException(400, "Invalid partner ID")
+
+    initial_stage = _resolve_initial_stage(
+        payload.source, payload.referred_by_partner_id
+    )
+
     lead = Lead(
         id=str(uuid.uuid4()),
         name=payload.name,
@@ -126,17 +153,32 @@ def create_lead(payload: LeadCreate, db: Session = Depends(get_db)):
         budget=payload.budget,
         branch=payload.branch,
         source=payload.source,
-        stage="new",
+        stage=initial_stage,
         assigned_to=payload.assigned_to,
         next_follow_up=payload.next_follow_up,
         food_preferences=payload.food_preferences,
         allergies=payload.allergies,
         advance_percent=payload.advance_percent,
+        referred_by_partner_id=payload.referred_by_partner_id,
         created_at=datetime.utcnow(),
     )
-    # Auto-remark on creation
+
+    # Auto-remark
+    remark_text = "Lead created."
+    if payload.referred_by_partner_id:
+        partner = db.query(Partner).filter(
+            Partner.id == payload.referred_by_partner_id
+        ).first()
+        if partner:
+            remark_text = f"Lead created via partner referral: {partner.name}"
+
     lead.remarks.append(
-        Remark(text="Lead created.", author="System", date=date.today(), stage="new")
+        Remark(
+            text=remark_text,
+            author="System",
+            date=date.today(),
+            stage=initial_stage,
+        )
     )
     db.add(lead)
     db.commit()
@@ -285,6 +327,17 @@ async def import_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
     reader = csv.DictReader(io.StringIO(text))
     count = 0
     for row in reader:
+        source = row.get("source", "Walk-in")
+        partner_id = row.get("partnerID", "").strip() or None
+
+        # Validate partner if provided in CSV
+        if partner_id:
+            partner = db.query(Partner).filter(Partner.id == partner_id).first()
+            if not partner:
+                partner_id = None  # skip invalid partner, don't fail the row
+
+        initial_stage = _resolve_initial_stage(source, partner_id)
+
         lead = Lead(
             id=str(uuid.uuid4()),
             name=row.get("name", ""),
@@ -295,9 +348,10 @@ async def import_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
             guest_count=int(row.get("guestCount", 0)),
             budget=row.get("budget", ""),
             branch=row.get("branch", ""),
-            source=row.get("source", "Walk-in"),
+            source=source,
             assigned_to=row.get("assignedTo", ""),
-            stage="new",
+            stage=initial_stage,
+            referred_by_partner_id=partner_id,
             created_at=datetime.utcnow(),
         )
         lead.remarks.append(
@@ -305,7 +359,7 @@ async def import_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
                 text="Imported from CSV.",
                 author="System",
                 date=date.today(),
-                stage="new",
+                stage=initial_stage,
             )
         )
         db.add(lead)
