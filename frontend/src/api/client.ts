@@ -1,3 +1,4 @@
+import { getAuthToken } from "../hooks/useAuth";
 import type {
   LeadBrief,
   LeadFull,
@@ -16,22 +17,46 @@ import type {
   AddOnInput,
   SummaryStats,
   PipelineStat,
+  Partner,
+  PartnerCreateInput,
+  PartnerUpdateInput,
+  PartnerSummary,
 } from "../types";
 
 const BASE = "http://localhost:8000";
 
 // ============================================
-// GENERIC FETCH HELPER
+// GENERIC FETCH HELPER (with auth)
 // ============================================
 
 async function request<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
+  const token = getAuthToken();
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string> || {}),
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers,
   });
+
+  if (res.status === 401) {
+    // Token expired — clear storage and redirect to login
+    localStorage.removeItem("banquet_access_token");
+    localStorage.removeItem("banquet_user");
+    window.location.reload();
+    throw new Error("Session expired. Please log in again.");
+  }
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.detail ?? `API ${res.status}`);
@@ -135,10 +160,16 @@ export async function replaceAddOns(
 }
 
 export async function importCSV(file: File): Promise<{ imported: number }> {
+  const token = getAuthToken();
   const form = new FormData();
   form.append("file", file);
+
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
   const res = await fetch(`${BASE}/api/leads/import-csv`, {
     method: "POST",
+    headers,
     body: form,
   });
   if (!res.ok) {
@@ -226,4 +257,60 @@ export interface CalendarSummary {
 
 export async function fetchCalendarSummary(): Promise<CalendarSummary> {
   return request<CalendarSummary>("/api/calendar/summary");
+}
+
+// ============================================
+// PARTNERS
+// ============================================
+
+export async function fetchPartners(params?: {
+  status?: string;
+  branch_id?: string;
+  search?: string;
+}): Promise<Partner[]> {
+  const qs = new URLSearchParams();
+  if (params?.status) qs.set("status", params.status);
+  if (params?.branch_id) qs.set("branch_id", params.branch_id);
+  if (params?.search) qs.set("search", params.search);
+  const query = qs.toString();
+  return request<Partner[]>(`/api/partners${query ? `?${query}` : ""}`);
+}
+
+export async function fetchPartnerSummary(): Promise<PartnerSummary> {
+  return request<PartnerSummary>("/api/partners/summary");
+}
+
+export async function fetchPartner(id: string): Promise<Partner> {
+  return request<Partner>(`/api/partners/${id}`);
+}
+
+export async function createPartner(data: PartnerCreateInput): Promise<Partner> {
+  return request<Partner>("/api/partners", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updatePartner(
+  id: string,
+  data: PartnerUpdateInput
+): Promise<Partner> {
+  return request<Partner>(`/api/partners/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deletePartner(id: string): Promise<void> {
+  return request<void>(`/api/partners/${id}`, { method: "DELETE" });
+}
+
+export async function createReferralLead(
+  partnerId: string,
+  data: Record<string, unknown>
+): Promise<{ id: string; stage: string; partner: string }> {
+  return request<{ id: string; stage: string; partner: string }>(`/api/partners/${partnerId}/refer`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }

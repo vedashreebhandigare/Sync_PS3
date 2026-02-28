@@ -1,77 +1,109 @@
-import os
-from datetime import datetime, date
-from fastapi import APIRouter, Depends, Query, Request, HTTPException
-from fastapi.responses import RedirectResponse
+"""
+Auth routes: login, me, change-password.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from google_auth_oauthlib.flow import Flow
-import google.oauth2.credentials
 
-from database import SessionLocal
-from models import GoogleIntegration
+from auth import (
+    create_access_token,
+    get_current_user,
+    hash_password,
+    verify_password,
+)
+from database import get_db
+from models import User
 
-router = APIRouter(prefix="/api/auth/google", tags=["auth"])
+router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "credentials.json")
-SCOPES = ['https://www.googleapis.com/auth/calendar.events']
 
-def _get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# ---------------------------------------------------------------------------
+# Schemas (local to this route file)
+# ---------------------------------------------------------------------------
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
-def _get_flow(redirect_uri: str = "http://localhost:8000/api/auth/google/callback"):
-    if not os.path.exists(CLIENT_SECRETS_FILE):
-        raise HTTPException(
-            status_code=500, 
-            detail="credentials.json not found in backend directory. Please create a Google Cloud project and download OAuth credentials."
-        )
-    return Flow.from_client_secrets_file(
-        CLIENT_SECRETS_FILE,
-        scopes=SCOPES,
-        redirect_uri=redirect_uri
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: "UserOut"
+
+
+class UserOut(BaseModel):
+    id: str
+    username: str
+    name: str
+    role: str  # "owner" | "branch_manager"
+    branch_id: str | None
+    branch_name: str | None
+
+    class Config:
+        from_attributes = True
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
+@router.post("/login", response_model=LoginResponse)
+def login(payload: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == payload.username).first()
+    if not user or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account is deactivated")
+
+    token = create_access_token({"sub": user.id, "role": user.role})
+
+    branch_name = None
+    if user.branch and user.branch_id:
+        branch_name = user.branch.name
+
+    return LoginResponse(
+        access_token=token,
+        user=UserOut(
+            id=user.id,
+            username=user.username,
+            name=user.name,
+            role=user.role,
+            branch_id=user.branch_id,
+            branch_name=branch_name,
+        ),
     )
 
-@router.get("/status")
-def get_status(db: Session = Depends(_get_db)):
-    integration = db.query(GoogleIntegration).first()
-    has_creds_file = os.path.exists(CLIENT_SECRETS_FILE)
-    return {
-        "connected": integration is not None,
-        "calendar_id": integration.calendar_id if integration else None,
-        "has_credentials_json": has_creds_file,
-    }
 
-@router.get("/login")
-def login(request: Request):
-    flow = _get_flow(redirect_uri=str(request.url_for('callback_handler')))
-    authorization_url, state = flow.authorization_url(
-        access_type='offline',
-        prompt='consent',
-        include_granted_scopes='true'
+@router.get("/me", response_model=UserOut)
+def get_me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    branch_name = None
+    if current_user.branch and current_user.branch_id:
+        branch_name = current_user.branch.name
+
+    return UserOut(
+        id=current_user.id,
+        username=current_user.username,
+        name=current_user.name,
+        role=current_user.role,
+        branch_id=current_user.branch_id,
+        branch_name=branch_name,
     )
-    return RedirectResponse(authorization_url)
 
-@router.get("/callback", name="callback_handler")
-def callback(request: Request, state: str = None, code: str = None, db: Session = Depends(_get_db)):
-    if not code:
-        raise HTTPException(status_code=400, detail="Missing authorization code")
-        
-    flow = _get_flow(redirect_uri=str(request.url_for('callback_handler')))
-    flow.fetch_token(authorization_response=str(request.url))
-    
-    credentials = flow.credentials
-    creds_json = credentials.to_json()
-    
-    integration = db.query(GoogleIntegration).first()
-    if integration:
-        integration.credentials_json = creds_json
-    else:
-        integration = GoogleIntegration(credentials_json=creds_json, calendar_id="primary")
-        db.add(integration)
-        
+
+@router.post("/change-password")
+def change_password(
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    current_user.password_hash = hash_password(payload.new_password)
     db.commit()
-    
-    # Redirect back to the frontend settings page
-    return RedirectResponse(url="http://localhost:5173/?view=settings")
+    return {"message": "Password updated successfully"}
