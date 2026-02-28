@@ -1,12 +1,4 @@
 // ============================================
-// ID GENERATION
-// ============================================
-
-export function generateId(): string {
-  return Math.random().toString(36).substring(2, 11);
-}
-
-// ============================================
 // DATE FORMATTING
 // ============================================
 
@@ -20,12 +12,10 @@ export function formatDate(dateStr: string | null | undefined): string {
   });
 }
 
-const TODAY = new Date("2026-02-28");
-
 export function daysUntil(dateStr: string | null | undefined): number | null {
   if (!dateStr) return null;
   const diff = Math.ceil(
-    (new Date(dateStr).getTime() - TODAY.getTime()) / 86_400_000
+    (new Date(dateStr).getTime() - Date.now()) / 86_400_000
   );
   return diff;
 }
@@ -51,4 +41,19 @@ export function cn(
   ...classes: (string | boolean | undefined | null)[]
 ): string {
   return classes.filter(Boolean).join(" ");
+}
+
+// ============================================
+// COMMA-SEPARATED STRING HELPERS
+// ============================================
+
+/** Split backend comma-separated string to array, filtering empties */
+export function csvToArray(str: string): string[] {
+  if (!str) return [];
+  return str.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+/** Join array back to comma-separated for backend */
+export function arrayToCsv(arr: string[]): string {
+  return arr.join(",");
 }

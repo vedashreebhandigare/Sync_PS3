@@ -1,39 +1,42 @@
-import type { LeadFilters } from "../../types";
-import { DropdownFilter, SearchIcon, XIcon } from "../ui";
-import { BRANCHES, EVENT_TYPES, LEAD_SOURCES } from "../../constants";
+import type { LeadFilters, Branch } from "../../types";
+import { DropdownFilter, SearchIcon } from "../ui";
+import { EVENT_TYPES, LEAD_SOURCES } from "../../constants";
 
 interface FilterBarProps {
   filters: LeadFilters;
-  onChangeFilters: (filters: LeadFilters) => void;
+  onChange: (f: LeadFilters) => void;
+  branches: Branch[];
+  hasActiveFilters: boolean;
 }
 
 export default function FilterBar({
   filters,
-  onChangeFilters,
+  onChange,
+  branches,
+  hasActiveFilters,
 }: FilterBarProps): JSX.Element {
-  const activeCount = [filters.branch, filters.eventType, filters.source].filter(
-    Boolean
-  ).length;
-
-  const set = (key: keyof LeadFilters, val: string): void => {
-    onChangeFilters({ ...filters, [key]: val });
+  const set = (key: keyof LeadFilters, value: string): void => {
+    onChange({ ...filters, [key]: value });
   };
 
-  const clearAll = (): void => {
-    onChangeFilters({ search: "", branch: "", eventType: "", source: "" });
+  const clear = (): void => {
+    onChange({ search: "", branch: "", event_type: "", source: "" });
   };
+
+  const branchOptions = branches.map((b) => ({ label: b.name, value: b.id }));
+  const eventOptions = EVENT_TYPES.map((t) => ({ label: t, value: t }));
+  const sourceOptions = LEAD_SOURCES.map((s) => ({ label: s, value: s }));
 
   return (
     <div
       style={{
-        background: "#fff",
-        borderBottom: "1px solid var(--border-default)",
         padding: "8px 20px",
+        borderBottom: "1px solid var(--border-default)",
         display: "flex",
         alignItems: "center",
         gap: 8,
+        background: "#fff",
         flexShrink: 0,
-        flexWrap: "wrap",
       }}
     >
       {/* Search */}
@@ -44,14 +47,14 @@ export default function FilterBar({
           gap: 6,
           background: "var(--bg-app)",
           borderRadius: "var(--radius-md)",
-          padding: "6px 12px",
-          flex: "0 1 260px",
-          minWidth: 160,
+          padding: "6px 10px",
+          border: "1.5px solid var(--border-default)",
+          flex: 1,
+          maxWidth: 260,
         }}
       >
         <SearchIcon />
         <input
-          type="text"
           placeholder="Search name, phone, email..."
           value={filters.search}
           onChange={(e) => set("search", e.target.value)}
@@ -59,67 +62,52 @@ export default function FilterBar({
             border: "none",
             background: "transparent",
             outline: "none",
+            flex: 1,
             fontSize: 12.5,
             fontFamily: "var(--font-primary)",
             color: "var(--text-primary)",
-            width: "100%",
           }}
         />
-        {filters.search && (
-          <button
-            onClick={() => set("search", "")}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--text-muted)",
-              display: "flex",
-              padding: 0,
-            }}
-          >
-            <XIcon size={14} />
-          </button>
-        )}
       </div>
 
       {/* Dropdowns */}
       <DropdownFilter
         label="Branch"
-        options={BRANCHES}
+        options={branchOptions}
         value={filters.branch}
         onChange={(v) => set("branch", v)}
-        allLabel="All Branches"
       />
       <DropdownFilter
         label="Event Type"
-        options={EVENT_TYPES}
-        value={filters.eventType}
-        onChange={(v) => set("eventType", v)}
-        allLabel="All Events"
+        options={eventOptions}
+        value={filters.event_type}
+        onChange={(v) => set("event_type", v)}
       />
       <DropdownFilter
         label="Source"
-        options={LEAD_SOURCES}
+        options={sourceOptions}
         value={filters.source}
         onChange={(v) => set("source", v)}
-        allLabel="All Sources"
       />
 
-      {/* Clear all */}
-      {activeCount > 0 && (
+      {/* Active filter count + clear */}
+      {hasActiveFilters && (
         <button
-          onClick={clearAll}
+          onClick={clear}
           style={{
-            background: "none",
+            background: "var(--danger-bg)",
+            color: "var(--danger)",
             border: "none",
-            color: "var(--accent)",
-            fontSize: 12,
+            borderRadius: "var(--radius-md)",
+            padding: "5px 10px",
+            fontSize: 11.5,
             fontWeight: 600,
             cursor: "pointer",
             fontFamily: "var(--font-primary)",
+            whiteSpace: "nowrap",
           }}
         >
-          Clear all
+          ✕ Clear filters
         </button>
       )}
     </div>

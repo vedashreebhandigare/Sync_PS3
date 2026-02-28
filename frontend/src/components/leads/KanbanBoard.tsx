@@ -1,21 +1,49 @@
 import { useState } from "react";
-import type { Lead, StageId } from "../../types";
+import type {
+  LeadBrief,
+  LeadFull,
+  LeadUpdateInput,
+  StageId,
+  MenuItemInput,
+  AddOnInput,
+  Contractor,
+  CatalogItem,
+} from "../../types";
 import { STAGES } from "../../constants";
 import KanbanColumn from "./KanbanColumn";
 import LeadDetailPanel from "./LeadDetailPanel";
 
 interface KanbanBoardProps {
-  leads: Lead[];
-  onUpdateLead: (id: string, updated: Lead) => void;
-  onMoveStage: (id: string, stage: StageId) => void;
+  leads: LeadBrief[];
+  selectedLead: LeadFull | null;
+  detailLoading: boolean;
+  onSelectLead: (id: string) => Promise<void>;
+  onCloseDetail: () => void;
+  onUpdateFields: (id: string, data: LeadUpdateInput) => Promise<void>;
+  onMoveStage: (id: string, stage: StageId) => Promise<void>;
+  onSetHall: (id: string, hallId: string) => Promise<void>;
+  onUpdateMenu: (id: string, items: MenuItemInput[]) => Promise<void>;
+  onAddRemark: (id: string, text: string, author: string) => Promise<void>;
+  onUpdateAddOns: (id: string, addOns: AddOnInput[]) => Promise<void>;
+  contractors: Contractor[];
+  catalog: CatalogItem[];
 }
 
 export default function KanbanBoard({
   leads,
-  onUpdateLead,
+  selectedLead,
+  detailLoading,
+  onSelectLead,
+  onCloseDetail,
+  onUpdateFields,
   onMoveStage,
+  onSetHall,
+  onUpdateMenu,
+  onAddRemark,
+  onUpdateAddOns,
+  contractors,
+  catalog,
 }: KanbanBoardProps): JSX.Element {
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [collapsed, setCollapsed] = useState<Set<StageId>>(new Set());
 
   const toggle = (id: StageId): void => {
@@ -27,23 +55,10 @@ export default function KanbanBoard({
     });
   };
 
-  /* keep detail panel in sync when leads change */
-  const activeLead = selectedLead
-    ? leads.find((l) => l.id === selectedLead.id) ?? null
-    : null;
-
   return (
     <>
-      {/* Board */}
       <div style={{ flex: 1, overflowX: "auto", overflowY: "hidden", padding: 14 }}>
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            height: "100%",
-            minWidth: "fit-content",
-          }}
-        >
+        <div style={{ display: "flex", gap: 10, height: "100%", minWidth: "fit-content" }}>
           {STAGES.map((stage) => (
             <KanbanColumn
               key={stage.id}
@@ -51,41 +66,39 @@ export default function KanbanBoard({
               leads={leads.filter((l) => l.stage === stage.id)}
               collapsed={collapsed.has(stage.id)}
               onToggleCollapse={() => toggle(stage.id)}
-              onSelectLead={setSelectedLead}
+              onSelectLead={onSelectLead}
             />
           ))}
         </div>
       </div>
 
-      {/* Detail panel overlay */}
-      {activeLead && (
-        <div
-          className="animate-fade-in"
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.25)",
-            zIndex: 150,
-          }}
-          onClick={() => setSelectedLead(null)}
-        />
+      {/* Overlay */}
+      {selectedLead && (
+        <div className="animate-fade-in"
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 150 }}
+          onClick={onCloseDetail} />
+      )}
+
+      {/* Loading indicator */}
+      {detailLoading && !selectedLead && (
+        <div style={{ position: "fixed", top: 0, right: 0, width: 480, height: "100vh", background: "#fff", boxShadow: "var(--shadow-panel)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ fontSize: 14, color: "var(--text-muted)", fontFamily: "var(--font-primary)" }}>Loading…</div>
+        </div>
       )}
 
       {/* Detail panel */}
-      {activeLead && (
+      {selectedLead && (
         <LeadDetailPanel
-          lead={activeLead}
-          onClose={() => setSelectedLead(null)}
-          onUpdate={(id, updated) => {
-            onUpdateLead(id, updated);
-            setSelectedLead(updated);
-          }}
-          onMoveStage={(id, stage) => {
-            onMoveStage(id, stage);
-            /* update local selection */
-            const updated = leads.find((l) => l.id === id);
-            if (updated) setSelectedLead({ ...updated, stage });
-          }}
+          lead={selectedLead}
+          onClose={onCloseDetail}
+          onUpdateFields={onUpdateFields}
+          onMoveStage={onMoveStage}
+          onSetHall={onSetHall}
+          onUpdateMenu={onUpdateMenu}
+          onAddRemark={onAddRemark}
+          onUpdateAddOns={onUpdateAddOns}
+          contractors={contractors}
+          catalog={catalog}
         />
       )}
     </>
