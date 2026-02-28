@@ -181,3 +181,49 @@ export async function fetchPipeline(branch?: string): Promise<PipelineStat[]> {
   const qs = branch ? `?branch=${branch}` : "";
   return request<PipelineStat[]>(`/api/stats/pipeline${qs}`);
 }
+
+// ============================================
+// CALENDAR
+// ============================================
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  hall_id: string | null;
+  hall_name: string | null;
+  branch_id: string;
+  date: string;
+  event_type: string;
+  guest_count: number;
+  stage: string;
+  status: string;
+  advance_paid: number;
+  total_cost: number;
+  customer_name: string;
+  type: string;
+}
+
+export async function fetchCalendarEvents(
+  startDate: string,
+  endDate: string,
+  branchId?: string,
+  hallId?: string,
+): Promise<CalendarEvent[]> {
+  const params = new URLSearchParams();
+  params.set("start_date", startDate);
+  params.set("end_date", endDate);
+  if (branchId) params.set("branch_id", branchId);
+  if (hallId) params.set("hall_id", hallId);
+  return request<CalendarEvent[]>(`/api/calendar/events?${params.toString()}`);
+}
+
+export interface CalendarSummary {
+  today_events: number;
+  upcoming_7_days: number;
+  tentative_holds: number;
+  pending_followups: number;
+}
+
+export async function fetchCalendarSummary(): Promise<CalendarSummary> {
+  return request<CalendarSummary>("/api/calendar/summary");
+}
