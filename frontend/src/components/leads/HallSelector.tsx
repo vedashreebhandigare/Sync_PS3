@@ -33,14 +33,14 @@ export default function HallSelector({
               const active = selectedHallId === hall.id;
               const types = csvToArray(hall.event_types);
               return (
-                <tr key={hall.id} style={{ borderTop: "1px solid var(--border-light)", background: active ? "var(--accent-bg)" : "#fff" }}>
+                <tr key={hall.id} style={{ borderTop: "1px solid var(--border-light)", background: active ? "var(--accent-bg)" : "var(--bg-card)" }}>
                   <td style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-primary)" }}>{hall.name}</td>
                   <td style={{ padding: "8px 10px", color: "var(--text-secondary)" }}>{hall.location}</td>
                   <td style={{ padding: "8px 10px", color: "var(--text-secondary)" }}>{hall.capacity}</td>
                   <td style={{ padding: "8px 10px" }}>
                     <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
                       {types.map((t) => (
-                        <span key={t} style={{ fontSize: 9.5, background: "var(--bg-app)", padding: "1px 5px", borderRadius: 4, color: "var(--text-muted)" }}>
+                        <span key={t} style={{ fontSize: 9.5, background: "var(--bg-section)", padding: "1px 5px", borderRadius: 4, color: "var(--text-muted)" }}>
                           {t}
                         </span>
                       ))}

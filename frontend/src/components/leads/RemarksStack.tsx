@@ -10,11 +10,7 @@ interface RemarksStackProps {
   onAddRemark: (text: string, author: string) => void;
 }
 
-export default function RemarksStack({
-  remarks,
-  assignedTo,
-  onAddRemark,
-}: RemarksStackProps): JSX.Element {
+export default function RemarksStack({ remarks, assignedTo, onAddRemark }: RemarksStackProps): JSX.Element {
   const [text, setText] = useState<string>("");
 
   const handleAdd = (): void => {
@@ -35,7 +31,7 @@ export default function RemarksStack({
 
       <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
         <input placeholder="Add a remark..." value={text} onChange={(e) => setText(e.target.value)} onKeyDown={handleKeyDown}
-          style={{ flex: 1, padding: "8px 12px", border: "1.5px solid var(--border-default)", borderRadius: "var(--radius-md)", fontSize: 12.5, fontFamily: "var(--font-primary)", outline: "none" }} />
+          style={{ flex: 1, padding: "8px 12px", border: "1.5px solid var(--border-default)", borderRadius: "var(--radius-md)", fontSize: 12.5, fontFamily: "var(--font-primary)", outline: "none", background: "var(--bg-input)", color: "var(--text-primary)" }} />
         <Button variant="primary" style={{ padding: "8px 14px" }} onClick={handleAdd}>Add</Button>
       </div>
 

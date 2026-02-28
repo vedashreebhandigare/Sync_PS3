@@ -18,24 +18,17 @@ const inputStyle: React.CSSProperties = {
   fontSize: 13,
   fontFamily: "var(--font-primary)",
   outline: "none",
+  background: "var(--bg-input)",
+  color: "var(--text-primary)",
 };
 
-export default function AdvancePayment({
-  total_cost,
-  menu_total,
-  guest_count,
-  advance_percent,
-  advance_paid,
-  onChangePercent,
-  onChangePaid,
-}: AdvancePaymentProps): JSX.Element {
+export default function AdvancePayment({ total_cost, menu_total, guest_count, advance_percent, advance_paid, onChangePercent, onChangePaid }: AdvancePaymentProps): JSX.Element {
   const estimatedTotal = total_cost || menu_total * guest_count;
   const requiredAdvance = Math.round((estimatedTotal * advance_percent) / 100);
 
   return (
     <div>
       <SectionLabel>Advance Payment</SectionLabel>
-
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 10 }}>
         <div>
           <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 3, fontFamily: "var(--font-primary)" }}>Total Estimated Cost</label>
@@ -50,7 +43,7 @@ export default function AdvancePayment({
         </div>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: "var(--radius-md)", padding: 12, border: "1px solid var(--border-default)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ background: "var(--bg-card)", borderRadius: "var(--radius-md)", padding: 12, border: "1px solid var(--border-default)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-primary)" }}>Required Advance</div>
           <div style={{ fontSize: 15, fontWeight: 700, color: "var(--accent)", fontFamily: "var(--font-primary)" }}>{currency(requiredAdvance)}</div>

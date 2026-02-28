@@ -24,7 +24,7 @@ export default function Header({
   onImportCSV,
 }: HeaderProps): JSX.Element {
   return (
-    <div style={{ background: "#fff", borderBottom: "1px solid var(--border-default)", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+    <div style={{ background: "var(--bg-card)", borderBottom: "1px solid var(--border-default)", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 34, height: 34, borderRadius: 9, background: "linear-gradient(135deg, #6d5cff, #a78bfa)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 15, fontWeight: 800 }}>B</div>
         <div>

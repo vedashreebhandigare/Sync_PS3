@@ -59,14 +59,7 @@ export default function KanbanBoard({
     <>
       {/* Board */}
       <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: 14 }}>
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 14,
-            alignContent: "flex-start",
-          }}
-        >
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, alignContent: "flex-start" }}>
           {STAGES.map((stage) => (
             <KanbanColumn
               key={stage.id}
@@ -83,13 +76,13 @@ export default function KanbanBoard({
       {/* Overlay */}
       {selectedLead && (
         <div className="animate-fade-in"
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 150 }}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 150 }}
           onClick={onCloseDetail} />
       )}
 
       {/* Loading indicator */}
       {detailLoading && !selectedLead && (
-        <div style={{ position: "fixed", top: 0, right: 0, width: 480, height: "100vh", background: "#fff", boxShadow: "var(--shadow-panel)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ position: "fixed", top: 0, right: 0, width: 480, height: "100vh", background: "var(--bg-section)", boxShadow: "var(--shadow-panel)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ fontSize: 14, color: "var(--text-muted)", fontFamily: "var(--font-primary)" }}>Loading…</div>
         </div>
       )}

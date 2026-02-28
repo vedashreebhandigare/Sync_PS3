@@ -26,20 +26,16 @@ const inputStyle: React.CSSProperties = {
   fontSize: 12.5,
   fontFamily: "var(--font-primary)",
   outline: "none",
+  background: "var(--bg-input)",
+  color: "var(--text-primary)",
 };
 
-export default function MenuBuilder({
-  menu,
-  guestCount,
-  catalog,
-  onSave,
-}: MenuBuilderProps): JSX.Element {
+export default function MenuBuilder({ menu, guestCount, catalog, onSave }: MenuBuilderProps): JSX.Element {
   const [showCatalog, setShowCatalog] = useState<boolean>(false);
   const [form, setForm] = useState<NewItemForm>(INITIAL_FORM);
 
   const totalPerPlate = menu.reduce((sum, m) => sum + m.cost_per_plate, 0);
 
-  /* Convert current menu to inputs (strip server-generated id) */
   const toInputs = (items: MenuItem[]): MenuItemInput[] =>
     items.map((m) => ({ name: m.name, category: m.category, cost_per_plate: m.cost_per_plate }));
 
@@ -59,7 +55,6 @@ export default function MenuBuilder({
     setForm(INITIAL_FORM);
   };
 
-  /* Group catalog by category */
   const catalogByCategory = MENU_CATEGORIES.map((cat) => ({
     category: cat,
     items: catalog.filter((c) => c.category === cat),
@@ -84,7 +79,7 @@ export default function MenuBuilder({
                 <tr key={item.id} style={{ borderTop: "1px solid var(--border-light)" }}>
                   <td style={{ padding: "7px 10px", fontWeight: 500, color: "var(--text-primary)" }}>{item.name}</td>
                   <td style={{ padding: "7px 10px", color: "var(--text-secondary)" }}>{item.category}</td>
-                  <td style={{ padding: "7px 10px", fontWeight: 600 }}>{currency(item.cost_per_plate)}</td>
+                  <td style={{ padding: "7px 10px", fontWeight: 600, color: "var(--text-primary)" }}>{currency(item.cost_per_plate)}</td>
                   <td style={{ padding: "7px 10px" }}>
                     <button onClick={() => removeItem(item.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--danger)", display: "flex" }}>
                       <TrashIcon />
@@ -103,7 +98,7 @@ export default function MenuBuilder({
 
       <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
         <input placeholder="Dish name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ ...inputStyle, flex: 1 }} />
-        <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as MenuCategory })} style={{ ...inputStyle, background: "#fff", padding: "7px 8px" }}>
+        <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as MenuCategory })} style={{ ...inputStyle, padding: "7px 8px" }}>
           {MENU_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
         </select>
         <input placeholder="₹/plate" type="number" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} style={{ ...inputStyle, width: 75 }} />
@@ -127,7 +122,7 @@ export default function MenuBuilder({
                     const exists = menu.some((m) => m.name === item.name);
                     return (
                       <button key={item.id} disabled={exists} onClick={() => addItem(item.name, item.category, item.cost_per_plate)}
-                        style={{ padding: "4px 10px", borderRadius: "var(--radius-sm)", border: `1px solid ${exists ? "var(--border-light)" : "var(--border-default)"}`, background: exists ? "var(--bg-app)" : "#fff", fontSize: 11.5, fontFamily: "var(--font-primary)", cursor: exists ? "default" : "pointer", color: exists ? "var(--text-muted)" : "var(--text-primary)", fontWeight: 500, opacity: exists ? 0.5 : 1 }}>
+                        style={{ padding: "4px 10px", borderRadius: "var(--radius-sm)", border: `1px solid ${exists ? "var(--border-light)" : "var(--border-default)"}`, background: exists ? "var(--bg-section)" : "var(--bg-card)", fontSize: 11.5, fontFamily: "var(--font-primary)", cursor: exists ? "default" : "pointer", color: exists ? "var(--text-muted)" : "var(--text-primary)", fontWeight: 500, opacity: exists ? 0.5 : 1 }}>
                         {exists ? "✓ " : "+ "}{item.name}
                       </button>
                     );

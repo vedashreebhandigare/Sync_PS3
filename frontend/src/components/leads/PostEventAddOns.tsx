@@ -15,17 +15,15 @@ const inputStyle: React.CSSProperties = {
   fontSize: 12.5,
   fontFamily: "var(--font-primary)",
   outline: "none",
+  background: "var(--bg-input)",
+  color: "var(--text-primary)",
 };
 
-export default function PostEventAddOns({
-  addOns,
-  onSave,
-}: PostEventAddOnsProps): JSX.Element {
+export default function PostEventAddOns({ addOns, onSave }: PostEventAddOnsProps): JSX.Element {
   const [newDesc, setNewDesc] = useState("");
   const [newCost, setNewCost] = useState("");
 
-  const toInputs = (items: AddOn[]): AddOnInput[] =>
-    items.map((a) => ({ desc: a.desc, cost: a.cost }));
+  const toInputs = (items: AddOn[]): AddOnInput[] => items.map((a) => ({ desc: a.desc, cost: a.cost }));
 
   const addItem = (): void => {
     if (!newDesc) return;
@@ -34,9 +32,7 @@ export default function PostEventAddOns({
     setNewCost("");
   };
 
-  const removeItem = (id: string): void => {
-    onSave(toInputs(addOns.filter((a) => a.id !== id)));
-  };
+  const removeItem = (id: string): void => { onSave(toInputs(addOns.filter((a) => a.id !== id))); };
 
   const total = addOns.reduce((sum, a) => sum + (a.cost || 0), 0);
 
@@ -45,9 +41,9 @@ export default function PostEventAddOns({
       <SectionLabel>Post-Event Add-ons / Additional Costs</SectionLabel>
 
       {addOns.map((addon) => (
-        <div key={addon.id} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center", padding: "6px 8px", background: "#fff", borderRadius: "var(--radius-md)", border: "1px solid var(--border-light)" }}>
-          <span style={{ flex: 1, fontSize: 12.5, fontFamily: "var(--font-primary)" }}>{addon.desc}</span>
-          <span style={{ fontSize: 12.5, fontWeight: 600, fontFamily: "var(--font-primary)" }}>{currency(addon.cost)}</span>
+        <div key={addon.id} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center", padding: "6px 8px", background: "var(--bg-card)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-light)" }}>
+          <span style={{ flex: 1, fontSize: 12.5, fontFamily: "var(--font-primary)", color: "var(--text-primary)" }}>{addon.desc}</span>
+          <span style={{ fontSize: 12.5, fontWeight: 600, fontFamily: "var(--font-primary)", color: "var(--text-primary)" }}>{currency(addon.cost)}</span>
           <button onClick={() => removeItem(addon.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--danger)", display: "flex" }}>
             <TrashIcon />
           </button>
@@ -63,7 +59,7 @@ export default function PostEventAddOns({
       </div>
 
       {addOns.length > 0 && (
-        <div style={{ marginTop: 10, padding: "8px 10px", background: "#fff", borderRadius: "var(--radius-md)", border: "1px solid var(--border-default)", fontSize: 13, fontWeight: 700, color: "var(--text-primary)", textAlign: "right", fontFamily: "var(--font-primary)" }}>
+        <div style={{ marginTop: 10, padding: "8px 10px", background: "var(--bg-card)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-default)", fontSize: 13, fontWeight: 700, color: "var(--text-primary)", textAlign: "right", fontFamily: "var(--font-primary)" }}>
           Additional Total: {currency(total)}
         </div>
       )}

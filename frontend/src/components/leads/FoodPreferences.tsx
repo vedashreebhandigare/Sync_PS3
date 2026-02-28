@@ -17,7 +17,8 @@ const textareaStyle: React.CSSProperties = {
   outline: "none",
   resize: "vertical",
   minHeight: 40,
-  background: "#fff",
+  background: "var(--bg-input)",
+  color: "var(--text-primary)",
 };
 
 const labelStyle: React.CSSProperties = {
@@ -37,26 +38,14 @@ export default function FoodPreferences({
   return (
     <div>
       <SectionLabel>Food Preferences & Allergies</SectionLabel>
-
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div>
           <label style={labelStyle}>Food Preferences</label>
-          <textarea
-            value={foodPreferences}
-            onChange={(e) => onChangePreferences(e.target.value)}
-            placeholder="e.g. Vegetarian, North Indian, Chinese..."
-            style={textareaStyle}
-          />
+          <textarea value={foodPreferences} onChange={(e) => onChangePreferences(e.target.value)} placeholder="e.g. Vegetarian, North Indian, Chinese..." style={textareaStyle} />
         </div>
-
         <div>
           <label style={labelStyle}>Allergies / Dietary Restrictions</label>
-          <textarea
-            value={allergies}
-            onChange={(e) => onChangeAllergies(e.target.value)}
-            placeholder="e.g. No shellfish, nut allergy..."
-            style={textareaStyle}
-          />
+          <textarea value={allergies} onChange={(e) => onChangeAllergies(e.target.value)} placeholder="e.g. No shellfish, nut allergy..." style={textareaStyle} />
         </div>
       </div>
     </div>

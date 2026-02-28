@@ -9,13 +9,7 @@ interface DropdownFilterProps {
   allLabel?: string;
 }
 
-export default function DropdownFilter({
-  label,
-  options,
-  value,
-  onChange,
-  allLabel = "All",
-}: DropdownFilterProps): JSX.Element {
+export default function DropdownFilter({ label, options, value, onChange, allLabel = "All" }: DropdownFilterProps): JSX.Element {
   const [open, setOpen] = useState<boolean>(false);
 
   const handleSelect = useCallback(
@@ -35,10 +29,8 @@ export default function DropdownFilter({
           alignItems: "center",
           gap: 5,
           padding: "6px 12px",
-          background: value ? "var(--accent-bg)" : "#fff",
-          border: value
-            ? "1.5px solid var(--accent)"
-            : "1.5px solid var(--border-default)",
+          background: value ? "var(--accent-bg)" : "var(--bg-card)",
+          border: value ? "1.5px solid var(--accent)" : "1.5px solid var(--border-default)",
           borderRadius: "var(--radius-md)",
           cursor: "pointer",
           fontSize: 12.5,
@@ -53,19 +45,13 @@ export default function DropdownFilter({
 
       {open && (
         <>
-          {/* Click-away overlay */}
-          <div
-            style={{ position: "fixed", inset: 0, zIndex: 90 }}
-            onClick={() => setOpen(false)}
-          />
-
-          {/* Dropdown */}
+          <div style={{ position: "fixed", inset: 0, zIndex: 90 }} onClick={() => setOpen(false)} />
           <div
             style={{
               position: "absolute",
               top: "calc(100% + 4px)",
               left: 0,
-              background: "#fff",
+              background: "var(--bg-card)",
               border: "1px solid var(--border-default)",
               borderRadius: "var(--radius-lg)",
               boxShadow: "var(--shadow-lg)",
@@ -94,18 +80,8 @@ export default function DropdownFilter({
                     fontWeight: active ? 600 : 400,
                     transition: "background var(--transition-fast)",
                   }}
-                  onMouseEnter={(e) => {
-                    if (!active) {
-                      (e.target as HTMLDivElement).style.background =
-                        "var(--bg-app)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!active) {
-                      (e.target as HTMLDivElement).style.background =
-                        "transparent";
-                    }
-                  }}
+                  onMouseEnter={(e) => { if (!active) { (e.target as HTMLDivElement).style.background = "var(--bg-hover)"; } }}
+                  onMouseLeave={(e) => { if (!active) { (e.target as HTMLDivElement).style.background = "transparent"; } }}
                 >
                   {opt}
                 </div>

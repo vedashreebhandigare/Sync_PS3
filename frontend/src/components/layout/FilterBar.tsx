@@ -35,7 +35,7 @@ export default function FilterBar({
         display: "flex",
         alignItems: "center",
         gap: 8,
-        background: "#fff",
+        background: "var(--bg-card)",
         flexShrink: 0,
       }}
     >

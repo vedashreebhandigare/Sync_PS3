@@ -30,7 +30,8 @@ const inputStyle: React.CSSProperties = {
   fontSize: 13,
   fontFamily: "var(--font-primary)",
   outline: "none",
-  background: "#fff",
+  background: "var(--bg-input)",
+  color: "var(--text-primary)",
 };
 
 const labelStyle: React.CSSProperties = {

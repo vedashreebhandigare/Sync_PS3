@@ -13,10 +13,7 @@ interface Preview {
   file: File;
 }
 
-export default function CSVImportModal({
-  onClose,
-  onImport,
-}: CSVImportModalProps): JSX.Element {
+export default function CSVImportModal({ onClose, onImport }: CSVImportModalProps): JSX.Element {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -24,16 +21,13 @@ export default function CSVImportModal({
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result;
       if (typeof text !== "string") return;
-
       const lines = text.split("\n").filter((l) => l.trim());
       const headers = lines[0].split(",").map((h) => h.trim());
       const rows = lines.slice(1, 6).map((line) => line.split(",").map((v) => v.trim()));
-
       setPreview({ headers, rows, total: lines.length - 1, file });
     };
     reader.readAsText(file);
@@ -79,7 +73,7 @@ export default function CSVImportModal({
           <div style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-default)", overflow: "auto", maxHeight: 200 }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, fontFamily: "var(--font-primary)" }}>
               <thead>
-                <tr style={{ background: "var(--bg-app)" }}>
+                <tr style={{ background: "var(--bg-section)" }}>
                   {preview.headers.map((h) => (
                     <th key={h} style={{ padding: "6px 8px", textAlign: "left", fontWeight: 600, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{h}</th>
                   ))}

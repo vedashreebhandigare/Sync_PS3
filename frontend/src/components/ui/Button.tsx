@@ -9,23 +9,23 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
   primary: {
     background: "var(--accent)",
-    color: "#fff",
+    color: "#0f1623",
     border: "none",
-    boxShadow: "0 2px 8px #6d5cff33",
+    boxShadow: "0 2px 8px rgba(34,211,167,0.25)",
   },
   secondary: {
-    background: "var(--bg-app)",
+    background: "var(--bg-hover)",
     color: "var(--text-primary)",
     border: "1.5px solid var(--border-default)",
   },
   danger: {
-    background: "#fff",
+    background: "var(--danger-bg)",
     color: "var(--danger)",
     border: "1.5px solid var(--danger-border)",
   },
   success: {
     background: "var(--success)",
-    color: "#fff",
+    color: "#0f1623",
     border: "none",
   },
   ghost: {

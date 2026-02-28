@@ -1,22 +1,22 @@
 import type { Stage, StageId, EventType, LeadSource } from "../types";
 
 // ============================================
-// PIPELINE STAGES (UI display config)
+// PIPELINE STAGES (UI display config — Aurora dark theme)
 // ============================================
 
 export const STAGES: Stage[] = [
-  { id: "new", label: "New Lead", icon: "✦", color: "#6366f1", bg: "#eef2ff" },
-  { id: "call", label: "Call", icon: "✆", color: "#8b5cf6", bg: "#f5f3ff" },
-  { id: "visit", label: "Property Visit", icon: "⌂", color: "#d97706", bg: "#fffbeb" },
-  { id: "tasting", label: "Food Tasting", icon: "◎", color: "#ea580c", bg: "#fff7ed" },
-  { id: "menu", label: "Menu Finalization", icon: "☰", color: "#0891b2", bg: "#ecfeff" },
-  { id: "advance", label: "Advance Payment", icon: "₹", color: "#059669", bg: "#ecfdf5" },
-  { id: "decor", label: "Decoration & Event Final", icon: "❋", color: "#7c3aed", bg: "#f5f3ff" },
-  { id: "fullpay", label: "Full Payment", icon: "$", color: "#16a34a", bg: "#f0fdf4" },
-  { id: "post", label: "Post-Event Settlement", icon: "✓", color: "#64748b", bg: "#f8fafc" },
-  { id: "feedback", label: "Feedback", icon: "★", color: "#0ea5e9", bg: "#f0f9ff" },
-  { id: "converted", label: "Converted ✅", icon: "✔", color: "#15803d", bg: "#f0fdf4" },
-  { id: "lost", label: "Lost ❌", icon: "✘", color: "#dc2626", bg: "#fef2f2" },
+  { id: "new", label: "New Lead", icon: "✦", color: "#6366f1", bg: "rgba(99,102,241,0.12)" },
+  { id: "call", label: "Call", icon: "✆", color: "#8b5cf6", bg: "rgba(139,92,246,0.12)" },
+  { id: "visit", label: "Property Visit", icon: "⌂", color: "#d97706", bg: "rgba(217,119,6,0.12)" },
+  { id: "tasting", label: "Food Tasting", icon: "◎", color: "#ea580c", bg: "rgba(234,88,12,0.12)" },
+  { id: "menu", label: "Menu Finalization", icon: "☰", color: "#0891b2", bg: "rgba(8,145,178,0.12)" },
+  { id: "advance", label: "Advance Payment", icon: "₹", color: "#059669", bg: "rgba(5,150,105,0.12)" },
+  { id: "decor", label: "Decoration & Event Final", icon: "❋", color: "#7c3aed", bg: "rgba(124,58,237,0.12)" },
+  { id: "fullpay", label: "Full Payment", icon: "$", color: "#16a34a", bg: "rgba(22,163,74,0.12)" },
+  { id: "post", label: "Post-Event Settlement", icon: "✓", color: "#64748b", bg: "rgba(100,116,139,0.12)" },
+  { id: "feedback", label: "Feedback", icon: "★", color: "#0ea5e9", bg: "rgba(14,165,233,0.12)" },
+  { id: "converted", label: "Converted ✅", icon: "✔", color: "#15803d", bg: "rgba(21,128,61,0.12)" },
+  { id: "lost", label: "Lost ❌", icon: "✘", color: "#dc2626", bg: "rgba(220,38,38,0.12)" },
 ];
 
 export const TERMINAL_STAGES: StageId[] = ["converted", "lost"];
@@ -39,18 +39,29 @@ export const MENU_CATEGORIES = [
 ] as const;
 
 // ============================================
-// EVENT TYPE STYLING
+// BRANCH LIST (static for filters)
+// ============================================
+
+export const BRANCHES = [
+  "branch-andheri",
+  "branch-thane",
+  "branch-powai",
+  "branch-panvel",
+];
+
+// ============================================
+// EVENT TYPE STYLING — Aurora dark-mode colors
 // ============================================
 
 export const EVENT_TYPE_COLORS: Record<string, { bg: string; color: string }> = {
-  Wedding: { bg: "#fef3c7", color: "#92400e" },
-  "Corporate Event": { bg: "#dbeafe", color: "#1e40af" },
-  Reception: { bg: "#fce7f3", color: "#9d174d" },
-  "Birthday Party": { bg: "#ede9fe", color: "#5b21b6" },
-  Conference: { bg: "#e0f2fe", color: "#0369a1" },
-  Anniversary: { bg: "#fef3c7", color: "#b45309" },
-  Engagement: { bg: "#fce7f3", color: "#be185d" },
-  "Social Gathering": { bg: "#f3f4f6", color: "#374151" },
+  Wedding: { bg: "rgba(251,191,36,0.15)", color: "#fbbf24" },
+  "Corporate Event": { bg: "rgba(96,165,250,0.15)", color: "#60a5fa" },
+  Reception: { bg: "rgba(244,114,182,0.15)", color: "#f472b6" },
+  "Birthday Party": { bg: "rgba(167,139,250,0.15)", color: "#a78bfa" },
+  Conference: { bg: "rgba(56,189,248,0.15)", color: "#38bdf8" },
+  Anniversary: { bg: "rgba(251,191,36,0.15)", color: "#fbbf24" },
+  Engagement: { bg: "rgba(244,114,182,0.15)", color: "#f472b6" },
+  "Social Gathering": { bg: "rgba(148,163,184,0.15)", color: "#94a3b8" },
 };
 
 export const DEFAULT_ADVANCE_PERCENT = 20;
