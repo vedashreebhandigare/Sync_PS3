@@ -1,0 +1,50 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "1. Install Dependencies (Frontend & Backend)",
+            "type": "shell",
+            "command": "Write-Host 'Setting up Backend...'; cd backend; uv sync; Write-Host 'Setting up Frontend...'; cd ../frontend; bun install; Write-Host 'All newly added libraries (like recharts) have been installed successfully!';",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "2. Run Backend Server (Uvicorn)",
+            "type": "shell",
+            "command": "cd backend; uv run uvicorn main:app --reload --port 8000",
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "group": "servers"
+            }
+        },
+        {
+            "label": "3. Run Frontend Server (Vite)",
+            "type": "shell",
+            "command": "cd frontend; bun run dev",
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "group": "servers"
+            }
+        },
+        {
+            "label": "Start All Services",
+            "dependsOn": [
+                "2. Run Backend Server (Uvicorn)",
+                "3. Run Frontend Server (Vite)"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
