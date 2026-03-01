@@ -3,7 +3,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
     PieChart, Pie, Cell, Legend
 } from "recharts";
-import { getAuthToken } from "../../hooks/useAuth";
+import { getAuthToken } from "../../utils/token";
 
 /* ─── Types ─── */
 interface HallUtilization {

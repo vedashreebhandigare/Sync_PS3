@@ -1,4 +1,4 @@
-import { getAuthToken } from "../hooks/useAuth";
+import { getAuthToken } from "../utils/token";
 import type {
   LeadBrief,
   LeadFull,

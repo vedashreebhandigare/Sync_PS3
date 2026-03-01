@@ -7,12 +7,7 @@ const BASE = "";
 // TOKEN MANAGEMENT
 // ============================================
 
-const TOKEN_KEY = "banquet_access_token";
-const USER_KEY = "banquet_user";
-
-function getStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
+import { TOKEN_KEY, USER_KEY, getStoredToken } from "../utils/token";
 
 function getStoredUser(): AuthUser | null {
   const raw = localStorage.getItem(USER_KEY);
@@ -142,10 +137,4 @@ export function useAuth(): AuthContextType {
   return ctx;
 }
 
-/**
- * Returns the stored token for use in the API client.
- * This is a non-hook helper for use outside React components.
- */
-export function getAuthToken(): string | null {
-  return getStoredToken();
-}
+
