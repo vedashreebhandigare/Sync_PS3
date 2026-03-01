@@ -365,3 +365,33 @@ export async function createReferralLead(
     body: JSON.stringify(data),
   });
 }
+
+// ============================================
+// CALL COACHING
+// ============================================
+
+import type { CallRecord } from "../types";
+
+export async function initiateCall(
+  leadId: string,
+  phoneNumber: string
+): Promise<{ call_id: string; status: string; twilio_configured: boolean; gemini_configured: boolean }> {
+  return request(`/api/calls/initiate/${leadId}`, {
+    method: "POST",
+    body: JSON.stringify({ phone_number: phoneNumber }),
+  });
+}
+
+export async function hangupCall(
+  callId: string
+): Promise<{ call_id: string; status: string; duration_seconds: number; analysis: Record<string, unknown> }> {
+  return request(`/api/calls/hangup/${callId}`, { method: "POST" });
+}
+
+export async function fetchLeadCalls(leadId: string): Promise<CallRecord[]> {
+  return request<CallRecord[]>(`/api/calls/lead/${leadId}`);
+}
+
+export async function fetchCallConfigStatus(): Promise<{ twilio_configured: boolean; gemini_configured: boolean }> {
+  return request(`/api/calls/config/status`);
+}

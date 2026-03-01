@@ -328,3 +328,43 @@ export interface InventoryItemInput {
   low_stock_threshold: number;
 }
 
+// ============================================
+// CALL COACHING TYPES
+// ============================================
+
+export type CallStatus =
+  | "initiated"
+  | "ringing"
+  | "in-progress"
+  | "completed"
+  | "failed";
+
+export interface TranscriptEntry {
+  speaker: "staff" | "client" | "system";
+  text: string;
+  timestamp: string;
+}
+
+export interface AISuggestion {
+  suggestion: string;
+  reason: string;
+  timestamp: string;
+}
+
+export interface CallRecord {
+  id: string;
+  lead_id: string;
+  phone_number?: string;
+  twilio_sid: string | null;
+  start_time: string;
+  started_at?: string;
+  end_time: string | null;
+  ended_at?: string | null;
+  duration_seconds: number;
+  transcript: string;
+  analysis: string;
+  ai_analysis?: string;
+  status: CallStatus;
+}
+
+export type CatalogItemInput = Omit<CatalogItem, "id">;
