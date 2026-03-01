@@ -69,6 +69,8 @@ export type DecorType = "" | "internal" | "external";
 
 export type MenuCategory =
   | "Starters"
+  | "Snacks"
+  | "Indian Chaat"
   | "Main Course"
   | "Breads"
   | "Desserts"
