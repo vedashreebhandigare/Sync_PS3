@@ -77,15 +77,16 @@ export default function LoginPage() {
 
       {/* Right side with Login form */}
       <div
+        className="aurora-opaque-box"
         style={{
           width: 500,
-          background: "var(--aurora-bg-card, #111827)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           padding: 40,
-          boxShadow: "-10px 0 40px rgba(0,0,0,0.5)",
-          zIndex: 20
+          zIndex: 20,
+          borderRadius: 0,
+          border: "none",
         }}
       >
         <div style={{ width: "100%", maxWidth: 360 }}>

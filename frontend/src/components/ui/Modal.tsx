@@ -21,7 +21,7 @@ export default function Modal({ title, onClose, children, footer, width = 520 }:
 
       {/* Dialog */}
       <div
-        className="animate-fade-up"
+        className="animate-fade-up aurora-opaque-box"
         style={{
           position: "fixed",
           top: "50%",
@@ -29,13 +29,10 @@ export default function Modal({ title, onClose, children, footer, width = 520 }:
           transform: "translate(-50%, -50%)",
           width,
           maxHeight: "85vh",
-          background: "var(--bg-card)",
           borderRadius: "var(--radius-xl)",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
           zIndex: 310,
           display: "flex",
           flexDirection: "column",
-          border: "1px solid var(--border-default)",
         }}
       >
         {/* Header */}

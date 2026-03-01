@@ -14,17 +14,8 @@ interface MenuItem {
 }
 
 const MENU: MenuItem[] = [
-  { id: "dashboard", label: "Dashboard", icon: <LayoutDashboardIcon /> },
-  {
-    id: "leads",
-    label: "Leads",
-    icon: <UsersIcon />,
-    hasChevron: true,
-    subItems: [
-      { id: "add-lead", label: "Add Lead" },
-      { id: "lead-pipeline", label: "Lead Pipeline" },
-    ],
-  },
+  { id: "dashboard", label: "Dashboard", icon: <BarChartIcon /> },
+  { id: "leads", label: "Leads", icon: <UsersIcon /> },
   {
     id: "bookings",
     label: "Bookings",
@@ -52,7 +43,6 @@ const MENU: MenuItem[] = [
     icon: <FoodIcon />,
   },
   { id: "logistics", label: "Logistics", icon: <PackageIcon /> },
-  { id: "reports", label: "Reports", icon: <BarChartIcon /> },
   { id: "users", label: "Users", icon: <UserIcon /> },
   { id: "settings", label: "Settings", icon: <SettingsIcon /> },
 ];
@@ -167,17 +157,6 @@ export default function Sidebar({ activeItemId = "dashboard", onItemClick }: Sid
 }
 
 /* ─── SVG Icons (inline, lightweight) ─── */
-
-function LayoutDashboardIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
-      <rect width="7" height="9" x="3" y="3" rx="1" />
-      <rect width="7" height="5" x="14" y="3" rx="1" />
-      <rect width="7" height="9" x="14" y="12" rx="1" />
-      <rect width="7" height="5" x="3" y="16" rx="1" />
-    </svg>
-  );
-}
 
 function UsersIcon() {
   return (

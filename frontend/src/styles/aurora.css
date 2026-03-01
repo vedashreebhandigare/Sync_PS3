@@ -6,38 +6,43 @@
 :root {
   --aurora-font: "Outfit", system-ui, -apple-system, sans-serif;
 
-  /* Backgrounds */
-  --aurora-bg-body: #111827;
-  --aurora-bg-sidebar: #0f1623;
-  --aurora-bg-header: #111827;
-  --aurora-bg-content: #111827;
-  --aurora-bg-card: #1a2332;
-  --aurora-bg-card-hover: #1f2a3a;
-  --aurora-bg-input: #1a2332;
-  --aurora-bg-input-focus: #1f2a3a;
+  /* Backgrounds – Light Teal Aurora Gradient */
+  --aurora-bg-body: radial-gradient(circle at 50% 15%, #ffffff 0%, #e0f7fa 35%, #b2ebf2 100%);
+  --aurora-bg-sidebar: rgba(255, 255, 255, 0.35);
+  --aurora-bg-header: rgba(255, 255, 255, 0.2);
+  --aurora-bg-content: transparent;
+  --aurora-bg-card: rgba(255, 255, 255, 0.65);
+  --aurora-bg-card-hover: rgba(255, 255, 255, 0.85);
+  --aurora-bg-input: rgba(255, 255, 255, 0.5);
+  --aurora-bg-input-focus: rgba(255, 255, 255, 0.9);
+
+  /* Opaque Box Style (Modals, Popovers) */
+  --aurora-bg-opaque: #2d3436;
+  --aurora-text-on-opaque: #ffffff;
+  --aurora-border-opaque: rgba(255, 255, 255, 0.1);
 
   /* Accent */
-  --aurora-accent: #22d3a7;
-  --aurora-accent-dim: rgba(34, 211, 167, 0.15);
-  --aurora-accent-hover: #1ab892;
-  --aurora-accent-glow: rgba(34, 211, 167, 0.08);
+  --aurora-accent: #14b8a6;
+  --aurora-accent-dim: rgba(20, 184, 166, 0.15);
+  --aurora-accent-hover: #0d9488;
+  --aurora-accent-glow: rgba(20, 184, 166, 0.1);
 
-  /* Text */
-  --aurora-text-primary: #e2e8f0;
-  --aurora-text-secondary: #94a3b8;
+  /* Text – Dark for visibility on light teal */
+  --aurora-text-primary: #1e293b;
+  --aurora-text-secondary: #475569;
   --aurora-text-muted: #64748b;
-  --aurora-text-sidebar-label: #4b5e76;
+  --aurora-text-sidebar-label: #334155;
   --aurora-text-white: #ffffff;
 
   /* Borders */
-  --aurora-border: rgba(255, 255, 255, 0.06);
-  --aurora-border-light: rgba(255, 255, 255, 0.03);
-  --aurora-border-sidebar: rgba(255, 255, 255, 0.04);
+  --aurora-border: rgba(0, 0, 0, 0.08);
+  --aurora-border-light: rgba(0, 0, 0, 0.04);
+  --aurora-border-sidebar: rgba(0, 0, 0, 0.06);
 
   /* Sidebar specific */
   --aurora-sidebar-width: 210px;
-  --aurora-sidebar-item-active-bg: rgba(34, 211, 167, 0.1);
-  --aurora-sidebar-item-hover-bg: rgba(255, 255, 255, 0.04);
+  --aurora-sidebar-item-active-bg: rgba(20, 184, 166, 0.1);
+  --aurora-sidebar-item-hover-bg: rgba(0, 0, 0, 0.03);
 
   /* Header */
   --aurora-header-height: 52px;
@@ -50,8 +55,8 @@
   --aurora-radius-full: 9999px;
 
   /* Shadows */
-  --aurora-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --aurora-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --aurora-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --aurora-shadow-md: 0 12px 28px rgba(0, 0, 0, 0.08);
 
   /* Transitions */
   --aurora-transition-fast: 150ms ease;
@@ -84,7 +89,7 @@
 }
 
 /* ============================================
-   SCROLLBAR (dark)
+   SCROLLBAR (light)
    ============================================ */
 .aurora-root ::-webkit-scrollbar {
   width: 4px;
@@ -96,12 +101,12 @@
 }
 
 .aurora-root ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.12);
   border-radius: 10px;
 }
 
 .aurora-root ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 /* ============================================
@@ -520,6 +525,32 @@
 
 .aurora-sidebar-item:nth-child(14) {
   animation-delay: 0.28s;
+}
+
+/* ============================================
+   UTILITY CLASSES – OPAQUE BOXES
+   ============================================ */
+.aurora-opaque-box {
+  background: var(--aurora-bg-opaque) !important;
+  color: var(--aurora-text-on-opaque) !important;
+  border: 1px solid var(--aurora-border-opaque) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+}
+
+.aurora-opaque-box * {
+  color: inherit !important;
+}
+
+.aurora-opaque-box input,
+.aurora-opaque-box select,
+.aurora-opaque-box textarea {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+.aurora-opaque-box input::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
 }
 
 /* Reduced motion */

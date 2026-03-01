@@ -9,7 +9,7 @@ import ReportsPage from "./ReportsPage";
 import CallCoachingPage from "./CallCoachingPage";
 
 export default function DashboardLayout() {
-    const [activePage, setActivePage] = useState<string>("lead-pipeline");
+    const [activePage, setActivePage] = useState<string>("dashboard");
 
     const renderPage = () => {
         switch (activePage) {
@@ -20,12 +20,14 @@ export default function DashboardLayout() {
             case "calendar":
             case "all-bookings":
                 return <BookingsOverviewPage />;
+            case "dashboard":
             case "reports":
                 return <ReportsPage />;
             case "new-call":
             case "call-history":
             case "call-coach":
                 return <CallCoachingPage />;
+            case "leads":
             case "lead-pipeline":
             default:
                 return <LeadPipelinePage />;

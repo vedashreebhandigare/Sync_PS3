@@ -34,18 +34,16 @@ function formatCurrency(n: number): string {
 function EventTooltip({ event, position }: { event: CalendarEvent; position: { x: number; y: number } }) {
     return (
         <div
+            className="aurora-opaque-box"
             style={{
                 position: "fixed",
                 left: position.x + 8,
                 top: position.y - 10,
                 zIndex: 1000,
-                background: "#ffffff",
-                border: "1px solid rgba(0,0,0,0.1)",
                 borderRadius: 10,
                 padding: "12px 16px",
                 minWidth: 220,
                 maxWidth: 300,
-                boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
                 fontFamily: "var(--aurora-font, 'Outfit', system-ui)",
                 pointerEvents: "none",
             }}
@@ -501,7 +499,7 @@ export default function CalendarPage() {
                 flexDirection: "column",
                 height: "100%",
                 overflow: "hidden",
-                background: "#f8fafc",
+                background: "transparent",
                 fontFamily: "var(--aurora-font, 'Outfit', system-ui)",
             }}
         >
@@ -664,10 +662,10 @@ export default function CalendarPage() {
 
 /* ─── Shared styles ─── */
 const navBtnStyle: React.CSSProperties = {
-    background: "#ffffff",
-    border: "1px solid #e2e8f0",
+    background: "var(--aurora-bg-card)",
+    border: "1px solid var(--aurora-border)",
     borderRadius: 8,
-    color: "#475569",
+    color: "var(--aurora-text-primary)",
     cursor: "pointer",
     fontSize: 18,
     fontWeight: 400,
@@ -681,10 +679,10 @@ const navBtnStyle: React.CSSProperties = {
 };
 
 const selectStyle: React.CSSProperties = {
-    background: "#ffffff",
-    border: "1px solid #e2e8f0",
+    background: "var(--aurora-bg-input)",
+    border: "1px solid var(--aurora-border)",
     borderRadius: 8,
-    color: "#475569",
+    color: "var(--aurora-text-secondary)",
     fontSize: 12.5,
     padding: "6px 10px",
     outline: "none",

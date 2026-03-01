@@ -36,16 +36,17 @@ const BASE = "";
 
 /* ─── Light Theme Tokens ─── */
 const T = {
-    bg: "#f5f6fa",
-    cardBg: "#ffffff",
-    border: "#e2e5ed",
-    text: "#1a1d26",
-    textSecondary: "#5f6577",
-    textMuted: "#8b90a0",
-    hoverBg: "#eef0f5",
-    shadow: "0 2px 12px rgba(0,0,0,0.06)",
-    tooltipBg: "#ffffff",
-    tooltipBorder: "#e2e5ed",
+    bg: "transparent",
+    cardBg: "var(--aurora-bg-card)",
+    border: "var(--aurora-border)",
+    text: "var(--aurora-text-primary)",
+    textSecondary: "var(--aurora-text-secondary)",
+    textMuted: "var(--aurora-text-muted)",
+    hoverBg: "var(--aurora-sidebar-item-hover-bg)",
+    shadow: "var(--aurora-shadow-sm)",
+    tooltipBg: "var(--aurora-bg-opaque)",
+    tooltipBorder: "var(--aurora-border-opaque)",
+    textOnOpaque: "#ffffff",
 };
 
 /* ─── Helpers ─── */
@@ -56,10 +57,10 @@ const BRANCH_COLORS = ["#7c3aed", "#2563eb", "#059669", "#d97706"];
 const SOURCE_COLORS = ["#7c3aed", "#2563eb", "#059669", "#d97706", "#dc2626", "#0d9488", "#e11d48"];
 
 function getGrade(score: number): { label: string; color: string; bg: string } {
-    if (score >= 75) return { label: "Excellent", color: "#059669", bg: "#ecfdf5" };
-    if (score >= 55) return { label: "Good", color: "#2563eb", bg: "#eff6ff" };
-    if (score >= 35) return { label: "Average", color: "#d97706", bg: "#fffbeb" };
-    return { label: "Needs Improvement", color: "#dc2626", bg: "#fef2f2" };
+    if (score >= 75) return { label: "Excellent", color: "#10b981", bg: "rgba(16, 185, 129, 0.15)" };
+    if (score >= 55) return { label: "Good", color: "#3b82f6", bg: "rgba(59, 130, 246, 0.15)" };
+    if (score >= 35) return { label: "Average", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.15)" };
+    return { label: "Needs Improvement", color: "#ef4444", bg: "rgba(239, 68, 68, 0.15)" };
 }
 
 /* ─── Component ─── */
@@ -291,7 +292,7 @@ export default function ReportsPage() {
                             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: T.textSecondary, fontSize: 12 }} />
                             <YAxis axisLine={false} tickLine={false} tickFormatter={fmtLakh} tick={{ fill: T.textMuted, fontSize: 11 }} />
                             <RechartsTooltip
-                                contentStyle={{ background: T.tooltipBg, border: `1px solid ${T.tooltipBorder}`, borderRadius: 8, fontSize: 13, color: T.text }}
+                                contentStyle={{ background: T.tooltipBg, border: `1px solid ${T.tooltipBorder}`, borderRadius: 8, fontSize: 13, color: T.textOnOpaque }}
                                 formatter={(value: any) => [fmtCurrency(value), "Revenue"]}
                             />
                             <Bar dataKey="revenue" radius={[8, 8, 0, 0]}>
@@ -316,7 +317,7 @@ export default function ReportsPage() {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={T.border} />
                             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: T.textSecondary, fontSize: 12 }} />
                             <YAxis axisLine={false} tickLine={false} tick={{ fill: T.textMuted, fontSize: 11 }} />
-                            <RechartsTooltip contentStyle={{ background: T.tooltipBg, border: `1px solid ${T.tooltipBorder}`, borderRadius: 8, fontSize: 13, color: T.text }} />
+                            <RechartsTooltip contentStyle={{ background: T.tooltipBg, border: `1px solid ${T.tooltipBorder}`, borderRadius: 8, fontSize: 13, color: T.textOnOpaque }} />
                             <Legend wrapperStyle={{ fontSize: 12, color: T.textSecondary }} />
                             <Bar dataKey="converted" stackId="a" fill="#059669" name="Converted" radius={[0, 0, 0, 0]} />
                             <Bar dataKey="rejected" stackId="a" fill="#dc2626" name="Rejected" radius={[0, 0, 0, 0]} />
@@ -415,7 +416,7 @@ export default function ReportsPage() {
                                     ))}
                                 </Pie>
                                 <RechartsTooltip
-                                    contentStyle={{ background: T.tooltipBg, border: `1px solid ${T.tooltipBorder}`, borderRadius: 8, fontSize: 13, color: T.text }}
+                                    contentStyle={{ background: T.tooltipBg, border: `1px solid ${T.tooltipBorder}`, borderRadius: 8, fontSize: 13, color: T.textOnOpaque }}
                                     formatter={(value: any, name: any) => [`${value} leads`, name]}
                                 />
                                 <Legend

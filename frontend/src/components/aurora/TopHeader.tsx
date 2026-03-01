@@ -147,16 +147,14 @@ export default function TopHeader(): JSX.Element {
 
                         {showProfileMenu && (
                             <div
+                                className="aurora-opaque-box aurora-animate-fade-in"
                                 style={{
                                     position: "absolute",
                                     top: "100%",
                                     right: 0,
                                     marginTop: 8,
-                                    width: 200,
-                                    background: "#151f2d",
-                                    border: "1px solid var(--border-light)",
+                                    width: 220,
                                     borderRadius: "var(--radius-lg)",
-                                    boxShadow: "0 10px 30px rgba(0,0,0,0.8)",
                                     overflow: "hidden",
                                     zIndex: 9999,
                                     display: "flex",
@@ -165,28 +163,28 @@ export default function TopHeader(): JSX.Element {
                             >
                                 {/* User info header */}
                                 <div style={{
-                                    padding: "14px 16px",
-                                    borderBottom: "1px solid var(--border-light)",
+                                    padding: "16px 18px",
+                                    borderBottom: "1px solid rgba(255,255,255,0.1)",
                                 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--aurora-text-primary, #f1f5f9)" }}>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>
                                         {user?.name}
                                     </div>
-                                    <div style={{ fontSize: 11, color: "var(--aurora-text-muted, #64748b)", marginTop: 2 }}>
+                                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>
                                         @{user?.username}
                                     </div>
                                     <span style={{
                                         display: "inline-block",
-                                        marginTop: 6,
+                                        marginTop: 8,
                                         padding: "2px 8px",
                                         borderRadius: 12,
                                         fontSize: 10,
-                                        fontWeight: 600,
-                                        background: roleBadge.bg,
-                                        color: roleBadge.color,
+                                        fontWeight: 700,
+                                        background: "rgba(255,255,255,0.1)",
+                                        color: "#fff",
                                         textTransform: "uppercase",
                                         letterSpacing: "0.5px",
                                     }}>
-                                        {user?.role === "owner" ? "Owner" : "Branch Manager"}
+                                        {user?.role}
                                     </span>
                                 </div>
 
@@ -213,13 +211,13 @@ export default function TopHeader(): JSX.Element {
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
-                                            gap: 10,
+                                            gap: 12,
                                             width: "100%",
-                                            padding: "12px 16px",
+                                            padding: "12px 18px",
                                             background: "none",
                                             border: "none",
-                                            borderBottom: i < 1 ? "1px solid var(--border-light)" : "none",
-                                            color: item.danger ? "var(--danger)" : "var(--text-secondary)",
+                                            borderBottom: i < 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                                            color: item.danger ? "#f87171" : "rgba(255,255,255,0.8)",
                                             fontSize: 13,
                                             fontWeight: 500,
                                             cursor: "pointer",
@@ -227,12 +225,12 @@ export default function TopHeader(): JSX.Element {
                                             transition: "all 0.2s",
                                         }}
                                         onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = item.danger ? "var(--danger-bg)" : "var(--bg-hover)";
-                                            e.currentTarget.style.color = item.danger ? "var(--danger)" : "var(--text-primary)";
+                                            e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                                            e.currentTarget.style.color = "#fff";
                                         }}
                                         onMouseLeave={(e) => {
                                             e.currentTarget.style.background = "none";
-                                            e.currentTarget.style.color = item.danger ? "var(--danger)" : "var(--text-secondary)";
+                                            e.currentTarget.style.color = item.danger ? "#f87171" : "rgba(255,255,255,0.8)";
                                         }}
                                     >
                                         {item.icon === "lock" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>}
@@ -261,13 +259,11 @@ export default function TopHeader(): JSX.Element {
                     onClick={() => setShowPasswordModal(false)}
                 >
                     <div
+                        className="aurora-opaque-box aurora-animate-fade-in"
                         style={{
                             width: 380,
                             padding: "28px 24px",
-                            background: "var(--aurora-bg-card, #111827)",
-                            borderRadius: 12,
-                            border: "1px solid var(--aurora-border, rgba(255,255,255,0.08))",
-                            boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+                            borderRadius: "var(--radius-xl)",
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
