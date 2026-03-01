@@ -32,7 +32,7 @@ interface SourcePerformance {
     total_revenue: number;
 }
 
-const BASE = "http://localhost:8000";
+const BASE = "";
 
 /* ─── Light Theme Tokens ─── */
 const T = {

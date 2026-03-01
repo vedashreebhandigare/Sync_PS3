@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { AuthUser, LoginResponse } from "../types";
 
-const BASE = "http://localhost:8000";
+const BASE = "";
 
 // ============================================
 // TOKEN MANAGEMENT
