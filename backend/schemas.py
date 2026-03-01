@@ -372,3 +372,24 @@ class SourcePerformance(BaseModel):
     converted_leads: int
     conversion_rate: float
     total_revenue: float
+
+
+# ---------------------------------------------------------------------------
+# Call Coaching
+# ---------------------------------------------------------------------------
+class CallInitiateRequest(BaseModel):
+    phone_number: str
+
+
+class CallRecordOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    lead_id: str
+    twilio_sid: Optional[str]
+    start_time: datetime
+    end_time: Optional[datetime]
+    duration_seconds: int
+    transcript: str   # JSON string
+    analysis: str     # JSON string
+    status: str

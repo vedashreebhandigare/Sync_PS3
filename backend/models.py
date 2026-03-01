@@ -310,3 +310,19 @@ class CatalogIngredient(Base):
 
     catalog_item = relationship("MenuCatalogItem", back_populates="catalog_ingredients")
     inventory_item = relationship("InventoryItem")
+
+
+class CallRecord(Base):
+    __tablename__ = "call_records"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    lead_id = Column(String, ForeignKey("leads.id"), nullable=False)
+    twilio_sid = Column(String, nullable=True)
+    start_time = Column(DateTime, default=datetime.utcnow)
+    end_time = Column(DateTime, nullable=True)
+    duration_seconds = Column(Integer, default=0)
+    transcript = Column(Text, default="[]")
+    analysis = Column(Text, default="{}")
+    status = Column(String, default="in-progress")
+
+    lead = relationship("Lead")
