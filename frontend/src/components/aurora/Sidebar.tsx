@@ -86,7 +86,7 @@ export default function Sidebar({ activeItemId = "dashboard", onItemClick }: Sid
             strokeLinejoin="round"
           />
         </svg>
-        <span className="aurora-sidebar-logo-text">aurora</span>
+        <span className="aurora-sidebar-logo-text">Sync</span>
       </div>
 
       {/* Main Menu */}
