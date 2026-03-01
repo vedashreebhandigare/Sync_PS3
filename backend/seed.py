@@ -18,6 +18,11 @@ from models import (
     User,
 )
 
+# Menu-data seeding modules
+from add_main_course import main as seed_main_course
+from add_snacks import main as seed_snacks
+from add_extras import main as seed_extras
+
 
 def gen() -> str:
     return str(uuid.uuid4())
@@ -208,27 +213,23 @@ def seed():
     db.flush()
 
     # ------------------------------------------------------------------
-    # Menu Catalog (reference items)
+    # Menu Catalog + Ingredients (via dedicated seeding modules)
     # ------------------------------------------------------------------
-    catalog = [
-        MenuCatalogItem(id=gen(), name="Paneer Tikka", category="Starters", cost_per_plate=80.0),
-        MenuCatalogItem(id=gen(), name="Chicken Seekh Kebab", category="Starters", cost_per_plate=100.0),
-        MenuCatalogItem(id=gen(), name="Veg Manchurian", category="Starters", cost_per_plate=70.0),
-        MenuCatalogItem(id=gen(), name="Dal Makhani", category="Main Course", cost_per_plate=90.0),
-        MenuCatalogItem(id=gen(), name="Butter Chicken", category="Main Course", cost_per_plate=120.0),
-        MenuCatalogItem(id=gen(), name="Veg Biryani", category="Main Course", cost_per_plate=100.0),
-        MenuCatalogItem(id=gen(), name="Paneer Butter Masala", category="Main Course", cost_per_plate=95.0),
-        MenuCatalogItem(id=gen(), name="Naan", category="Breads", cost_per_plate=20.0),
-        MenuCatalogItem(id=gen(), name="Garlic Roti", category="Breads", cost_per_plate=25.0),
-        MenuCatalogItem(id=gen(), name="Gulab Jamun", category="Desserts", cost_per_plate=40.0),
-        MenuCatalogItem(id=gen(), name="Ice Cream", category="Desserts", cost_per_plate=50.0),
-        MenuCatalogItem(id=gen(), name="Jalebi", category="Desserts", cost_per_plate=35.0),
-        MenuCatalogItem(id=gen(), name="Masala Chaas", category="Beverages", cost_per_plate=30.0),
-        MenuCatalogItem(id=gen(), name="Fresh Lime Soda", category="Beverages", cost_per_plate=35.0),
-        MenuCatalogItem(id=gen(), name="Tea / Coffee", category="Beverages", cost_per_plate=25.0),
-    ]
-    db.add_all(catalog)
-    db.flush()
+    # Commit base data first so the add_* modules can query inventory, etc.
+    db.commit()
+    db.close()
+
+    print("Seeding menu catalog: Main Course items...")
+    seed_main_course()
+
+    print("Seeding menu catalog: Snacks & Chaat items...")
+    seed_snacks()
+
+    print("Seeding menu catalog: Extras (starters, breads, desserts, beverages)...")
+    seed_extras()
+
+    # Re-open session for leads seeding below
+    db = SessionLocal()
 
     # ------------------------------------------------------------------
     # Sample Leads (14: original 12 + 2 potential leads from partners)
@@ -345,8 +346,11 @@ def seed():
     ]
     db.add_all(leads)
     db.commit()
+
+    # Count total menu items seeded across all modules
+    total_menu_items = db.query(MenuCatalogItem).count()
     db.close()
-    print(f"Seeded: 4 branches, {len(users)} users, 10 halls, 5 contractors, 5 partners, {len(catalog)} menu items, {len(leads)} leads.")
+    print(f"Seeded: 4 branches, {len(users)} users, 10 halls, 5 contractors, 5 partners, {total_menu_items} menu items (with ingredients), {len(leads)} leads.")
 
 
 if __name__ == "__main__":
