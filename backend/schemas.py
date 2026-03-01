@@ -343,3 +343,32 @@ class SummaryStats(BaseModel):
     converted: int
     lost: int
     potential: int = 0
+
+
+# ---------------------------------------------------------------------------
+# Reports
+# ---------------------------------------------------------------------------
+class HallUtilization(BaseModel):
+    hall_id: str
+    hall_name: str
+    times_booked: int
+
+
+class BranchPerformance(BaseModel):
+    branch_id: str
+    branch_name: str
+    total_leads: int
+    converted_leads: int
+    rejected_leads: int
+    conversion_rate: float
+    total_revenue: float
+    overall_performance_score: float
+    hall_utilization: list[HallUtilization]
+
+
+class SourcePerformance(BaseModel):
+    source: str
+    total_leads: int
+    converted_leads: int
+    conversion_rate: float
+    total_revenue: float

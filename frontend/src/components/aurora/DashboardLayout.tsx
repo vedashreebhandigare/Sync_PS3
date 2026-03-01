@@ -5,6 +5,7 @@ import LeadPipelinePage from "./LeadPipelinePage";
 import LogisticsPage from "../logistics/LogisticsPage";
 import MenuPage from "../menu/MenuPage";
 import BookingsOverviewPage from "./BookingsOverviewPage";
+import ReportsPage from "./ReportsPage";
 
 export default function DashboardLayout() {
     const [activePage, setActivePage] = useState<string>("lead-pipeline");
@@ -18,6 +19,8 @@ export default function DashboardLayout() {
             case "calendar":
             case "all-bookings":
                 return <BookingsOverviewPage />;
+            case "reports":
+                return <ReportsPage />;
             case "lead-pipeline":
             default:
                 return <LeadPipelinePage />;

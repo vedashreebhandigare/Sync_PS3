@@ -51,10 +51,10 @@ const MENU: MenuItem[] = [
 
 interface SidebarProps {
   activeItemId?: string;
-  onNavigate?: (id: string) => void;
+  onItemClick?: (id: string) => void;
 }
 
-export default function Sidebar({ activeItemId = "dashboard", onNavigate }: SidebarProps) {
+export default function Sidebar({ activeItemId = "dashboard", onItemClick }: SidebarProps) {
   const [activeId, setActiveId] = useState(activeItemId);
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({
     leads: true,
@@ -65,7 +65,7 @@ export default function Sidebar({ activeItemId = "dashboard", onNavigate }: Side
 
   const navigate = (id: string) => {
     setActiveId(id);
-    onNavigate?.(id);
+    onItemClick?.(id);
   };
 
   const toggleExpand = (id: string, e: React.MouseEvent) => {
